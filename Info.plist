@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>BambuBar</string>
+    <key>CFBundleDisplayName</key>
+    <string>BambuBar</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.local.bambubar</string>
+    <key>CFBundleExecutable</key>
+    <string>BambuBar</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>BambuBar</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>BambuBar 需要访问局域网中的拓竹打印机以显示摄像头画面。</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+</dict>
+</plist>

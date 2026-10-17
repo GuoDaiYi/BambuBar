@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version
+      - name: Build app bundle
+        run: ./build.sh
+      - name: Verify bundle
+        run: |
+          test -x build/BambuBar.app/Contents/MacOS/BambuBar
+          plutil -lint build/BambuBar.app/Contents/Info.plist
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: BambuBar.app
+          path: build/BambuBar.app
+          if-no-files-found: error

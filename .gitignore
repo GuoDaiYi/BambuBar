@@ -1,0 +1,19 @@
+# Build artifacts
+build/
+DerivedData/
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Xcode
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Runtime data
+*.log
+session.json
+Assets/AppIcon.iconset/
