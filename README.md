@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml"><img alt="Build" src="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml/badge.svg"></a>
-  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 2.0.0" src="https://img.shields.io/badge/version-2.0.0-brightgreen"></a>
+  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 2.0.1" src="https://img.shields.io/badge/version-2.0.1-brightgreen"></a>
   <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple">
   <img alt="Universal binary" src="https://img.shields.io/badge/binary-universal-blue">
   <img alt="Swift 5.8" src="https://img.shields.io/badge/Swift-5.8-orange?logo=swift">
@@ -59,7 +59,7 @@ Available in **English** and **Simplified Chinese** — switch languages from th
 
 ### Download the app
 
-Download **BambuBar-2.0.0-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
+Download **BambuBar-2.0.1-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
 
 The app is ad-hoc signed but not notarized. If macOS refuses to launch it, right-click the app and choose **Open**, or run:
 

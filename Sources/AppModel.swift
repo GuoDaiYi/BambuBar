@@ -386,7 +386,7 @@ final class AppModel: ObservableObject {
     // MARK: - Update check
 
     private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "2.0.0"
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "2.0.1"
     }
 
     /// Checks the public GitHub Releases API at most once every six hours.

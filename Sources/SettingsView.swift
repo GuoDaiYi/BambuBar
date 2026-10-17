@@ -9,31 +9,31 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 9)
 
             Divider().overlay(Color.white.opacity(0.06))
 
-            HStack(alignment: .top, spacing: 10) {
-                VStack(spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(spacing: 9) {
                     accountCard
                     languageSection
                 }
-                .frame(width: 268)
+                .frame(width: 258)
 
-                VStack(spacing: 10) {
+                VStack(spacing: 9) {
                     generalSection
                     aboutSection
                 }
-                .frame(width: 264)
+                .frame(width: 256)
 
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
         }
-        .frame(width: 590, height: 300, alignment: .top)
+        .frame(width: 560, height: 300, alignment: .top)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
     }
@@ -87,7 +87,7 @@ struct SettingsView: View {
                 LogoMark(size: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(app.session?.account ?? Lang.t("未登录", "Not signed in"))
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
                     Text("\(app.session?.region.title ?? "—") · UID \(app.session?.uid ?? "—")")
@@ -96,13 +96,16 @@ struct SettingsView: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                Button(Lang.t("退出登录", "Sign out")) { app.logout() }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.red)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(Theme.red.opacity(0.10)))
+                Button {
+                    app.logout()
+                } label: {
+                    TBIconView(icon: .logout, size: 11, color: Theme.red)
+                        .frame(width: 26, height: 24)
+                        .contentShape(Rectangle())
+                        .background(Capsule().fill(Theme.red.opacity(0.10)))
+                }
+                .buttonStyle(.plain)
+                .help(Lang.t("退出登录", "Sign out"))
             }
         }
         .card(padding: 11, radius: 16)
@@ -225,6 +228,6 @@ struct SettingsView: View {
     }
 
     private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "2.0.0"
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "2.0.1"
     }
 }

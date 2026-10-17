@@ -14,21 +14,21 @@ struct DashboardView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 9)
 
             Divider().overlay(Color.white.opacity(0.06))
 
-            VStack(spacing: 9) {
+            VStack(spacing: 8) {
                 heroCard
                 temperatureGrid
                 monitorStrip
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
         }
-        .frame(width: 590, height: 340, alignment: .top)
+        .frame(width: 560, height: 325, alignment: .top)
         .background(PanelBackground())
     }
 
