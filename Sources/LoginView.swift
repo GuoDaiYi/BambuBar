@@ -7,25 +7,29 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            switch app.authStep {
+            if app.showSettings, app.session != nil {
+                SettingsView()
+            } else {
+                switch app.authStep {
             case .loading:
                 LoadingView()
             case .login, .code:
                 LoginView()
             case .empty:
                 NoDevicesView()
-            case .ready:
-                if let service = app.selectedService {
-                    DashboardView(service: service)
-                        .id(service.id)
-                } else {
-                    LoadingView()
+                case .ready:
+                    if let service = app.selectedService {
+                        DashboardView(service: service)
+                            .id(service.id)
+                    } else {
+                        LoadingView()
+                    }
                 }
             }
         }
         .environment(\.colorScheme, .dark)
         .modifier(PopoverEntrance())
-        .modifier(MainWindowAutoHide(enabled: app.authStep == .ready))
+        .modifier(MainWindowAutoHide(enabled: app.authStep == .ready && !app.showSettings))
     }
 }
 
@@ -359,7 +363,6 @@ struct LoginView: View {
 
 struct NoDevicesView: View {
     @EnvironmentObject private var app: AppModel
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 14) {
@@ -388,7 +391,7 @@ struct NoDevicesView: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    openWindow(id: "settings")
+                    app.showSettings = true
                 } label: {
                     Text(Lang.t("设置", "Settings"))
                         .font(.system(size: 11, weight: .semibold, design: .rounded))

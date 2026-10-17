@@ -22,31 +22,6 @@ struct VisualEffectView: NSViewRepresentable {
     }
 }
 
-/// Rounds the actual hosting window, not only the SwiftUI cards.
-struct WindowCornerRadius: NSViewRepresentable {
-    var radius: CGFloat = 18
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async { apply(to: view.window) }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { apply(to: nsView.window) }
-    }
-
-    private func apply(to window: NSWindow?) {
-        guard let window, let content = window.contentView else { return }
-        content.wantsLayer = true
-        content.layer?.cornerRadius = radius
-        content.layer?.masksToBounds = true
-        window.isOpaque = false
-        window.backgroundColor = .clear
-    }
-}
-
-/// Shared dark glass background used by every window.
 struct PanelBackground: View {
     var body: some View {
         ZStack {
@@ -70,7 +45,6 @@ struct PanelBackground: View {
             )
         }
         .environment(\.colorScheme, .dark)
-        .background(WindowCornerRadius(radius: 18))
     }
 }
 
@@ -204,59 +178,6 @@ struct SectionHeader: View {
     }
 }
 
-// MARK: - Speed
-
-struct SpeedSelector: View {
-    let level: Int
-    let enabled: Bool
-    let onSelect: (Int) -> Void
-
-    private var items: [(Int, String, TBIcon)] {
-        [
-            (1, Lang.t("静音", "Silent"), .volumeOff),
-            (2, Lang.t("标准", "Standard"), .equal),
-            (3, Lang.t("运动", "Sport"), .rocket),
-            (4, Lang.t("狂暴", "Ludicrous"), .bolt)
-        ]
-    }
-
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(items, id: \.0) { item in
-                let selected = level == item.0
-                Button {
-                    onSelect(item.0)
-                } label: {
-                    VStack(spacing: 3) {
-                        TBIconView(icon: item.2, size: 13, color: selected ? Theme.green : Theme.textSecondary)
-                        Text(item.1)
-                            .font(.system(size: 9, weight: .medium, design: .rounded))
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .foregroundStyle(selected ? Theme.green : Theme.textSecondary)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(selected ? Theme.green.opacity(0.16) : Color.clear)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(selected ? Theme.green.opacity(0.28) : Color.clear, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(!enabled)
-                .opacity(enabled ? 1 : 0.45)
-            }
-        }
-        .padding(3)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.black.opacity(0.18))
-        )
-    }
-}
-
 // MARK: - Temperature tile
 
 struct TempTile: View {
@@ -266,46 +187,40 @@ struct TempTile: View {
     let target: Double
     let tint: Color
     var unit: String = "°C"
-    var enabled: Bool = true
     var targetText: String? = nil
-    var action: () -> Void = {}
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    TBIconView(icon: icon, size: 11, color: tint)
-                    Spacer()
-                    Text(title)
-                        .font(.system(size: 9, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(Int(current.rounded()))")
-                        .font(.system(size: 22, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Theme.textPrimary)
-                        .monospacedDigit()
-                    Text(unit)
-                        .font(.system(size: 9, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-                Text(enabled ? (targetText ?? Lang.t("目标 \(Int(target.rounded()))°", "Target \(Int(target.rounded()))°")) : "—")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                TBIconView(icon: icon, size: 11, color: tint)
+                Spacer()
+                Text(title)
                     .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textSecondary)
+                    .foregroundStyle(Theme.textTertiary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.045))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                    )
-            )
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(Int(current.rounded()))")
+                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary)
+                    .monospacedDigit()
+                Text(unit)
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textTertiary)
+            }
+            Text(targetText ?? Lang.t("目标 \(Int(target.rounded()))°", "Target \(Int(target.rounded()))°"))
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textSecondary)
         }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.045))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+        )
     }
 }
 

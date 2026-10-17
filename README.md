@@ -6,19 +6,19 @@
 
 <p align="center">
   <strong>A native macOS menu bar app for Bambu Lab 3D printers.</strong><br>
-  Live progress at a glance, with temperature and print controls one click away.
+  Live progress, layers, ETA and temperatures at a glance, in a small read-only menu bar monitor.
 </p>
 
 <p align="center">
   <a href="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml"><img alt="Build" src="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml/badge.svg"></a>
-  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 1.3.0" src="https://img.shields.io/badge/version-1.3.0-brightgreen"></a>
+  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 2.0.0" src="https://img.shields.io/badge/version-2.0.0-brightgreen"></a>
   <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple">
   <img alt="Universal binary" src="https://img.shields.io/badge/binary-universal-blue">
   <img alt="Swift 5.8" src="https://img.shields.io/badge/Swift-5.8-orange?logo=swift">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
-BambuBar lives in the macOS menu bar and connects directly to your Bambu Lab cloud account. It shows the current print in a compact progress ring, lets you switch between multiple printers, and exposes the controls you actually need during a print — without opening a slicer or a browser.
+BambuBar lives in the macOS menu bar and connects directly to your Bambu Lab cloud account. It shows the current print in a compact progress ring, lets you switch between multiple printers, and keeps temperatures and update status visible without opening a slicer or a browser.
 
 Available in **English** and **Simplified Chinese** — switch languages from the globe menu on the sign-in screen or in Settings. The choice is remembered across launches.
 
@@ -30,9 +30,9 @@ Available in **English** and **Simplified Chinese** — switch languages from th
 - **Multiple printers** — every printer stays connected in the background; switch the menu bar target from the header.
 - **Real-time job status** — state, progress, current/total layers, remaining time, ETA and speed mode.
 - **Download and unpack phases** — recognises cloud file transfer and preparation (Downloading / Unpacking) before the print starts.
-- **Print controls** — pause, resume and cancel (with a confirmation dialog) from the popover.
-- **Four speed modes** — Silent, Standard, Sport and Ludicrous, mapped to Bambu's `spd_lvl` values.
-- **Temperature and fan control** — view nozzle, bed and fan values; adjust nozzle/bed targets and part-cooling fan with G-code commands.
+- **Read-only temperatures** — nozzle, bed and part-cooling fan values are displayed; BambuBar never sends control commands.
+- **Print speed display** — shows the current Silent / Standard / Sport / Ludicrous mode as reported by the printer.
+- **Merged settings** — account, language, notifications, launch-at-login, update checks and Quit live in the same panel as the monitor.
 - **Bilingual UI** — English and Simplified Chinese, switchable at runtime with large segmented controls.
 - **Update checks** — the app checks GitHub Releases and shows a download badge when a newer version exists.
 - **Auto-hide main panel** — the dashboard closes after 10 seconds of inactivity, or when you switch to another window/app. Sign-in and Settings stay open until you close them.
@@ -59,7 +59,7 @@ Available in **English** and **Simplified Chinese** — switch languages from th
 
 ### Download the app
 
-Download **BambuBar-1.3.0-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
+Download **BambuBar-2.0.0-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
 
 The app is ad-hoc signed but not notarized. If macOS refuses to launch it, right-click the app and choose **Open**, or run:
 
@@ -104,7 +104,7 @@ The password is never stored. The cloud access token is kept in the macOS Keycha
 | Feature | A1 / A1 mini | P1 series | X1 series |
 | --- | :---: | :---: | :---: |
 | Cloud status monitoring | ✅ | ✅ (expected) | ✅ (expected) |
-| Unsigned print controls | ⚠️ firmware dependent | ⚠️ firmware dependent | ⚠️ firmware dependent |
+| Local / remote control | Use Bambu Handy or Bambu Studio | Use Bambu Handy or Bambu Studio | Use Bambu Handy or Bambu Studio |
 
 BambuBar was designed around the A1 family. Other printers that expose the same Bambu cloud MQTT payloads will likely work, but have not been verified. The app uses an unofficial cloud API and may need updates when Bambu changes its service. Newer firmware can reject unsigned third-party control commands; see **Known limitations**.
 
@@ -117,15 +117,14 @@ BambuBar was designed around the A1 family. Other printers that expose the same 
 
 ## Known limitations
 
-- **Firmware authorization:** newer Bambu firmware verifies MQTT control commands. In cloud mode and standard LAN mode, third-party pause/resume/cancel/speed commands can be rejected with `mqtt message verify failed` and HMS `0500-0500-0001-0007`. BambuBar detects this, shows a warning and disables the controls instead of retrying in a loop.
-- To use third-party controls, the printer must be in **LAN Only mode with Developer Mode enabled**. That disconnects it from Bambu Cloud, so Bambu Handy and remote access stop working for that printer.
-- Without signed command support, BambuBar works reliably as a cloud status monitor; use Bambu Handy or Bambu Studio for control on locked-down firmware.
-- The status UI is intentionally limited to progress, temperatures, speed and controls; camera, AMS and the printer-status panel were removed.
+- **Read-only by design:** BambuBar does not send pause, resume, cancel, speed or temperature commands. Use Bambu Handy or Bambu Studio for control.
+- Newer Bambu firmware applies an Authorization Control System to third-party MQTT writes; avoiding writes keeps BambuBar stable and prevents HMS `0500-0500-0001-0007` errors.
+- Camera and AMS panels are not included.
 - The app is not notarized. Build it locally or allow it in **System Settings → Privacy & Security** if you download a prebuilt app.
 
 ## Disclaimer
 
-BambuBar is an independent community project and is not affiliated with, endorsed by, or supported by Bambu Lab. Bambu Lab and the printer names are trademarks of their respective owners. The Bambu cloud API is unofficial and may change without notice. Use the app at your own risk, especially when sending control commands to a running printer.
+BambuBar is an independent community project and is not affiliated with, endorsed by, or supported by Bambu Lab. Bambu Lab and the printer names are trademarks of their respective owners. The Bambu cloud API is unofficial and may change without notice. Use the app at your own risk.
 
 ## License
 

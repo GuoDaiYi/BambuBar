@@ -43,6 +43,8 @@ enum TBIcon: String {
     case volumeOff = "\u{f1c3}"
     case equal = "\u{ee87}"
     case rocket = "\u{ec45}"
+    case arrowLeft = "\u{ea19}"
+    case logout = "\u{eba8}"
 }
 
 struct TBIconView: View {

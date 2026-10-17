@@ -67,13 +67,7 @@ struct BambuBarApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("BambuBar", id: "settings") {
-            SettingsView()
-                .environmentObject(app)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultSize(width: 680, height: 440)
+
     }
 }
 

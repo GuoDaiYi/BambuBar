@@ -1,17 +1,13 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Dashboard
-
-/// Compact landscape dashboard: progress, temperatures and controls.
-/// Camera, AMS and the secondary status panel are intentionally not present.
+/// Read-only print progress monitor.
+///
+/// There are deliberately no pause, resume, cancel, speed or temperature
+/// controls here. The panel shows progress, temperatures and timing only.
 struct DashboardView: View {
     @EnvironmentObject private var app: AppModel
     @ObservedObject var service: PrinterService
-
-    @Environment(\.openWindow) private var openWindow
-    @State private var showStopConfirm = false
-    @State private var showTemperatureSheet = false
 
     private var status: PrinterStatus { service.status }
 
@@ -26,24 +22,14 @@ struct DashboardView: View {
             VStack(spacing: 9) {
                 heroCard
                 temperatureGrid
-                controlCard
+                monitorStrip
             }
             .padding(.horizontal, 14)
             .padding(.top, 10)
-            .padding(.bottom, 12)
+            .padding(.bottom, 10)
         }
-        .frame(width: 590, height: service.controlWarning == nil ? 450 : 470)
+        .frame(width: 590, height: 340, alignment: .top)
         .background(PanelBackground())
-        .alert(Lang.t("取消当前打印？", "Cancel this print?"), isPresented: $showStopConfirm) {
-            Button(Lang.t("取消打印", "Cancel print"), role: .destructive) { service.stopPrint() }
-            Button(Lang.t("继续打印", "Keep printing"), role: .cancel) {}
-        } message: {
-            Text(Lang.t("打印任务会被立即中止，已打印的部分无法恢复。",
-                        "The print will stop immediately. Printed material cannot be recovered."))
-        }
-        .sheet(isPresented: $showTemperatureSheet) {
-            TemperatureSheet(service: service)
-        }
     }
 
     // MARK: Header
@@ -73,7 +59,7 @@ struct DashboardView: View {
                     .lineLimit(1)
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 6)
 
             if let update = app.availableUpdate {
                 Button {
@@ -111,7 +97,6 @@ struct DashboardView: View {
                     }
                     Divider()
                     Button(Lang.t("刷新设备列表", "Refresh printers")) { app.refreshDevices() }
-                    Button(Lang.t("设置…", "Settings…")) { openWindow(id: "settings") }
                     Divider()
                     Button(Lang.t("退出 BambuBar", "Quit BambuBar")) { app.quit() }
                 } label: {
@@ -132,8 +117,14 @@ struct DashboardView: View {
             }
 
             RoundIconButton(icon: .settings, size: 28) {
-                openWindow(id: "settings")
+                app.showSettings = true
             }
+            .help(Lang.t("设置", "Settings"))
+
+            RoundIconButton(icon: .power, tint: Theme.textSecondary, size: 28) {
+                app.quit()
+            }
+            .help(Lang.t("退出 BambuBar", "Quit BambuBar"))
         }
     }
 
@@ -146,12 +137,12 @@ struct DashboardView: View {
                     progress: status.state == .idle ? 0 : Double(status.progress) / 100,
                     tint: service.isOnline ? status.state.tint : Color.white.opacity(0.35),
                     lineWidth: 7,
-                    size: 92
+                    size: 104
                 )
                 VStack(spacing: 1) {
                     if service.isOnline, status.state.isBusy || status.state == .finished {
                         Text("\(status.progress)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundStyle(Theme.textPrimary)
                             .monospacedDigit()
                         Text("%")
@@ -159,7 +150,7 @@ struct DashboardView: View {
                             .foregroundStyle(Theme.textTertiary)
                     } else {
                         Image(systemName: service.isOnline ? status.state.symbol : "wifi.slash")
-                            .font(.system(size: 24, weight: .medium))
+                            .font(.system(size: 25, weight: .medium))
                             .foregroundStyle(service.isOnline ? status.state.tint : Color.white.opacity(0.35))
                         Text(service.isOnline ? status.state.shortLabel : Lang.t("离线", "Offline"))
                             .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -218,6 +209,8 @@ struct DashboardView: View {
         )
     }
 
+    // MARK: Read-only temperatures
+
     private var temperatureGrid: some View {
         HStack(spacing: 8) {
             TempTile(
@@ -225,19 +218,15 @@ struct DashboardView: View {
                 title: Lang.t("喷嘴", "Nozzle"),
                 current: status.nozzleTemp,
                 target: status.nozzleTarget,
-                tint: Theme.orange,
-                enabled: service.isOnline
-            ) { showTemperatureSheet = true }
-
+                tint: Theme.orange
+            )
             TempTile(
                 icon: .bed,
                 title: Lang.t("热床", "Bed"),
                 current: status.bedTemp,
                 target: status.bedTarget,
-                tint: Theme.red.opacity(0.9),
-                enabled: service.isOnline
-            ) { showTemperatureSheet = true }
-
+                tint: Theme.red.opacity(0.9)
+            )
             TempTile(
                 icon: .wind,
                 title: Lang.t("风扇", "Fan"),
@@ -245,112 +234,55 @@ struct DashboardView: View {
                 target: 0,
                 tint: Theme.cyan,
                 unit: "%",
-                enabled: service.isOnline,
                 targetText: Lang.t("占空比 \(status.coolingFan)%", "Duty \(status.coolingFan)%")
-            ) { showTemperatureSheet = true }
+            )
         }
     }
 
-    // MARK: Controls
+    // MARK: Monitor strip
 
-    private var controlCard: some View {
-        VStack(spacing: 8) {
-            HStack {
-                SectionHeader(
-                    title: Lang.t("打印速度", "Print speed"),
-                    icon: .gauge,
-                    trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil
-                )
-            }
-            SpeedSelector(
-                level: status.speedLevel,
-                enabled: service.isOnline && status.state.isBusy && !service.controlBlocked
-            ) { level in
-                service.setSpeed(level)
-            }
+    private var monitorStrip: some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(app.cloudConnected ? Theme.green : Theme.orange)
+                .frame(width: 5, height: 5)
+            Text(app.cloudConnected ? Lang.t("云端已连接", "Cloud connected") : Lang.t("云端重连中", "Reconnecting"))
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textTertiary)
 
-            if let warning = service.controlWarning {
-                HStack(alignment: .top, spacing: 6) {
-                    TBIconView(icon: .shieldLock, size: 11, color: Theme.orange)
-                    Text(warning)
-                        .font(.system(size: 9, weight: .medium, design: .rounded))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .help(warning)
-                }
-                .foregroundStyle(Theme.orange)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Button(Lang.t("重试", "Retry")) {
-                    service.clearControlBlock()
-                }
-                .buttonStyle(.plain)
-                .font(.system(size: 9.5, weight: .semibold, design: .rounded))
-                .foregroundStyle(Theme.orange)
+            if let updated = status.lastUpdate {
+                Text("·").foregroundStyle(Theme.textTertiary)
+                Text(Lang.t("更新于 \(timeString(updated))", "Updated \(timeString(updated))"))
+                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textTertiary)
             }
 
-            actionRow
-        }
-        .card(padding: 10, radius: 16)
-    }
+            Text("·").foregroundStyle(Theme.textTertiary)
+            Text(Lang.t("只读监控", "Monitor only"))
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textTertiary)
 
-    private var actionRow: some View {
-        HStack(spacing: 8) {
-            Button {
-                if status.state.canResume {
-                    service.resume()
-                } else {
-                    service.pause()
-                }
-            } label: {
-                HStack(spacing: 7) {
-                    TBIconView(icon: status.state.canResume ? .play : .pause,
-                               size: 12, color: canPauseResume ? Color(red: 0.02, green: 0.10, blue: 0.06) : Theme.textTertiary)
-                    Text(status.state.canResume ? Lang.t("继续打印", "Resume print") : Lang.t("暂停打印", "Pause print"))
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 34)
-                .foregroundStyle(canPauseResume ? Color(red: 0.02, green: 0.10, blue: 0.06) : Theme.textTertiary)
-                .contentShape(Rectangle())
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(canPauseResume ? Theme.green : Color.white.opacity(0.06))
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(!canPauseResume)
+            Spacer()
 
             Button {
-                showStopConfirm = true
-            } label: {
-                TBIconView(icon: .stop, size: 13, color: canStop ? Theme.red : Theme.textTertiary)
-                    .frame(width: 40, height: 34)
-                    .contentShape(Rectangle())
-                    .foregroundStyle(canStop ? Theme.red : Theme.textTertiary)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Theme.red.opacity(canStop ? 0.13 : 0.04))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(Theme.red.opacity(canStop ? 0.22 : 0.06), lineWidth: 1)
-                            )
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(!canStop)
-
-            RoundIconButton(icon: .refresh, size: 34) {
                 service.refresh()
+            } label: {
+                HStack(spacing: 4) {
+                    TBIconView(icon: .refresh, size: 9, color: Theme.textTertiary)
+                    Text(Lang.t("刷新", "Refresh"))
+                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                        .foregroundStyle(Theme.textTertiary)
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
+        .padding(.horizontal, 2)
     }
 
-    private var canPauseResume: Bool {
-        service.isOnline && (status.state.canPause || status.state.canResume) && !service.controlBlocked
-    }
-
-    private var canStop: Bool {
-        status.state.isBusy && !service.controlBlocked
+    private func timeString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f.string(from: date)
     }
 }

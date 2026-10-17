@@ -52,6 +52,8 @@ final class AppModel: ObservableObject {
     }
     @Published var lastRefresh: Date?
     @Published var availableUpdate: UpdateInfo?
+    /// When true, the main popover shows the merged Settings view.
+    @Published var showSettings = false
 
     private let api = CloudAPI()
     private let cloud = BambuCloud()
@@ -308,6 +310,7 @@ final class AppModel: ObservableObject {
         services = [:]
         selectedID = ""
         cloudConnected = false
+        showSettings = false
         authStep = .login
         authMessage = nil
     }
@@ -383,7 +386,7 @@ final class AppModel: ObservableObject {
     // MARK: - Update check
 
     private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.3.0"
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "2.0.0"
     }
 
     /// Checks the public GitHub Releases API at most once every six hours.

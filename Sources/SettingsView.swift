@@ -1,90 +1,111 @@
 import SwiftUI
 import AppKit
 
-/// Account, language, printer list and general preferences.
+/// Settings are part of the same menu-bar panel, not a separate window.
+/// A back arrow returns to the read-only monitor.
 struct SettingsView: View {
     @EnvironmentObject private var app: AppModel
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            HStack(alignment: .top, spacing: 14) {
-                VStack(spacing: 12) {
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+
+            Divider().overlay(Color.white.opacity(0.06))
+
+            HStack(alignment: .top, spacing: 10) {
+                VStack(spacing: 10) {
                     accountCard
                     languageSection
-                    generalSection
                 }
-                .frame(width: 294)
+                .frame(width: 268)
 
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 12) {
-                        printerSection
-                        aboutSection
-                    }
+                VStack(spacing: 10) {
+                    generalSection
+                    aboutSection
                 }
-                .frame(maxWidth: .infinity)
+                .frame(width: 264)
+
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
         }
-        .frame(width: 680, height: 440)
+        .frame(width: 590, height: 300, alignment: .top)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
-        .onAppear {
-            NSApp.activate(ignoringOtherApps: true)
-        }
     }
 
+    // MARK: Header
+
     private var header: some View {
-        HStack(spacing: 9) {
-            TBIconView(icon: .settings, size: 13, color: Theme.green)
+        HStack(spacing: 8) {
+            Button {
+                app.showSettings = false
+            } label: {
+                HStack(spacing: 4) {
+                    TBIconView(icon: .arrowLeft, size: 12, color: Theme.textSecondary)
+                    Text(Lang.t("返回", "Back"))
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            TBIconView(icon: .settings, size: 12, color: Theme.green)
             Text(Lang.t("设置", "Settings"))
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary)
             Spacer()
+
             Button {
-                dismiss()
+                app.quit()
             } label: {
-                TBIconView(icon: .close, size: 12, color: Theme.textSecondary)
-                    .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.white.opacity(0.06)))
+                HStack(spacing: 4) {
+                    TBIconView(icon: .power, size: 10, color: Theme.red)
+                    Text(Lang.t("退出", "Quit"))
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Theme.red)
+                }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 30)
-        .padding(.bottom, 14)
     }
 
     // MARK: Account
 
     private var accountCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 9) {
             SectionHeader(title: Lang.t("拓竹账号", "Bambu Lab account"), icon: .user)
-            HStack(spacing: 10) {
-                LogoMark(size: 34)
+            HStack(spacing: 9) {
+                LogoMark(size: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(app.session?.account ?? Lang.t("未登录", "Not signed in"))
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
                     Text("\(app.session?.region.title ?? "—") · UID \(app.session?.uid ?? "—")")
-                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.textTertiary)
                         .lineLimit(1)
                 }
                 Spacer()
                 Button(Lang.t("退出登录", "Sign out")) { app.logout() }
                     .buttonStyle(.plain)
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.red)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
                     .background(Capsule().fill(Theme.red.opacity(0.10)))
             }
         }
-        .card(padding: 12, radius: 16)
+        .card(padding: 11, radius: 16)
     }
 
     // MARK: Language
@@ -93,116 +114,34 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: Lang.t("语言", "Language"), icon: .language)
             LanguageToggle()
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .card(padding: 12, radius: 16)
-    }
-
-    private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.3.0"
-    }
-
-    // MARK: Printers
-
-    private var printerSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionHeader(title: Lang.t("打印机", "Printers"), icon: .printer)
-                Button {
-                    app.refreshDevices()
-                } label: {
-                    HStack(spacing: 4) {
-                        TBIconView(icon: .refresh, size: 10, color: Theme.textSecondary)
-                        Text(Lang.t("刷新", "Refresh"))
-                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-
-            if app.devices.isEmpty {
-                Text(Lang.t("暂未读取到设备", "No devices loaded"))
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textTertiary)
-                    .padding(.vertical, 6)
-            } else {
-                ForEach(app.orderedDevices) { device in
-                    deviceCard(device)
-                }
-            }
-        }
-    }
-
-    private func deviceCard(_ device: CloudDevice) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 7) {
-                Circle()
-                    .fill(device.online ? Theme.green : Color.white.opacity(0.3))
-                    .frame(width: 5, height: 5)
-                Text(device.name)
-                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(1)
-                Text(device.model)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textTertiary)
-                Spacer()
-                if app.selectedID == device.serial {
-                    Text(Lang.t("菜单栏", "Menu bar"))
-                        .font(.system(size: 8.5, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Theme.green)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(Theme.green.opacity(0.12)))
-                }
-                Button {
-                    app.selectedID = device.serial
-                } label: {
-                    Text(Lang.t("显示", "Show"))
-                        .font(.system(size: 9, weight: .semibold, design: .rounded))
-                        .foregroundStyle(app.selectedID == device.serial ? Theme.textTertiary : Theme.cyan)
-                }
-                .buttonStyle(.plain)
-                .disabled(app.selectedID == device.serial)
-            }
-
-        }
-        .padding(11)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                )
-        )
+        .card(padding: 11, radius: 16)
     }
 
     // MARK: General
 
     private var generalSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: Lang.t("通用", "General"), icon: .settings)
             VStack(spacing: 0) {
                 toggleRow(
                     icon: .bell,
-                    title: Lang.t("打印完成 / 异常通知", "Print finished / error notifications"),
-                    subtitle: Lang.t("任务结束时发送 macOS 通知", "Send a macOS notification when a job ends"),
+                    title: Lang.t("打印完成 / 异常通知", "Print notifications"),
+                    subtitle: Lang.t("任务结束时发送通知", "Notify when a job ends"),
                     isOn: $app.notificationsEnabled
                 )
-                Divider().overlay(Color.white.opacity(0.05)).padding(.leading, 30)
+                Divider().overlay(Color.white.opacity(0.05)).padding(.leading, 28)
                 toggleRow(
                     icon: .power,
                     title: Lang.t("开机自动启动", "Launch at login"),
-                    subtitle: Lang.t("登录 macOS 后在菜单栏运行", "Start in the menu bar after you sign in"),
+                    subtitle: Lang.t("登录后在菜单栏运行", "Run in the menu bar after sign-in"),
                     isOn: Binding(
                         get: { app.launchAtLogin },
                         set: { app.updateLaunchAtLogin($0) }
                     )
                 )
             }
-            .padding(.horizontal, 11)
+            .padding(.horizontal, 9)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.white.opacity(0.04))
@@ -212,19 +151,22 @@ struct SettingsView: View {
                     )
             )
         }
+        .card(padding: 11, radius: 16)
     }
 
     private func toggleRow(icon: TBIcon, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 9) {
-            TBIconView(icon: icon, size: 11, color: Theme.textSecondary)
-                .frame(width: 18)
+        HStack(spacing: 8) {
+            TBIconView(icon: icon, size: 10, color: Theme.textSecondary)
+                .frame(width: 16)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
+                    .lineLimit(1)
                 Text(subtitle)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .font(.system(size: 8.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
+                    .lineLimit(1)
             }
             Spacer()
             Toggle("", isOn: isOn)
@@ -232,46 +174,57 @@ struct SettingsView: View {
                 .controlSize(.mini)
                 .labelsHidden()
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, 8)
     }
 
     // MARK: About
 
     private var aboutSection: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 7) {
             SectionHeader(title: Lang.t("关于", "About"), icon: .infoCircle)
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Text("BambuBar \(appVersion)")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textSecondary)
-                Text("·")
-                    .foregroundStyle(Theme.textTertiary)
-                Text(Lang.t("云端状态 1 秒刷新", "Live cloud status, ~1s refresh"))
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                Text("·").foregroundStyle(Theme.textTertiary)
+                Text(Lang.t("只读进度监控", "Read-only monitor"))
+                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
                 Spacer()
+            }
+            HStack(spacing: 10) {
+                Button(app.availableUpdate == nil
+                       ? Lang.t("检查更新", "Check updates")
+                       : Lang.t("下载 \(app.availableUpdate?.version ?? "")", "Download \(app.availableUpdate?.version ?? "")")) {
+                    if app.availableUpdate != nil {
+                        app.openUpdate()
+                    } else {
+                        app.checkForUpdates(force: true)
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(app.availableUpdate == nil ? Theme.textTertiary : Theme.green)
+
                 Button(Lang.t("打开日志", "Open log")) {
                     NSWorkspace.shared.selectFile(Log.path, inFileViewerRootedAtPath: "")
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
+
+                Spacer()
+
                 Button(Lang.t("退出 App", "Quit")) { app.quit() }
                     .buttonStyle(.plain)
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.red)
             }
-            Text(Lang.t("拓竹固件在云端/普通局域网模式下会校验 MQTT 控制命令；未授权的第三方命令可能被拒绝。",
-                        "Bambu firmware verifies MQTT control commands in cloud and standard LAN modes; unsigned third-party commands may be rejected."))
-                .font(.system(size: 9, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textTertiary)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.top, 2)
+        .card(padding: 11, radius: 16)
     }
 
-    private func masked(_ code: String) -> String {
-        guard code.count > 4 else { return String(repeating: "•", count: max(code.count, 4)) }
-        return String(repeating: "•", count: code.count - 4) + code.suffix(4)
+    private var appVersion: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "2.0.0"
     }
 }
