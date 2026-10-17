@@ -25,7 +25,11 @@ BambuBar 常驻 macOS 菜单栏，直接连接拓竹云账号。菜单栏里就�
 - **打印控制**：暂停、继续、取消（取消前有确认弹窗）。
 - **四档速度**：静音、标准、运动、狂暴。
 - **温度与风扇**：查看喷嘴/热床/风扇；可调整喷嘴温度、热床温度和模型风扇。
-- **系统通知**：打印完成或异常时发送 macOS 通知。
+- **中英文切换**：登录页和主面板都使用大尺寸分段按钮，整块可点击。
+- **更新检测**：自动检查 GitHub Release，有新版本时显示下载提示。
+- **主窗口自动收回**：主面板 10 秒无操作，或点击其他窗口/应用时自动收起；登录页和设置窗口需要手动关闭。
+- **系统通知**：打印完成或异常时发送 macOS 通知，并附带单色打印机图片。
+- **Tabler 图标库**：内置 MIT 许可的线性图标。
 - **开机启动**：可选 `SMAppService` 登录项。
 - **无 Dock 图标、无第三方服务器**：SwiftUI + AppKit 原生实现。
 
@@ -46,7 +50,7 @@ BambuBar 常驻 macOS 菜单栏，直接连接拓竹云账号。菜单栏里就�
 
 ### 下载安装
 
-从 [Releases](https://github.com/GuoDaiYi/BambuBar/releases/latest) 下载 **BambuBar-1.2.0-macOS.dmg**，打开后把 **BambuBar** 拖进 **Applications**。安装包内含 Apple Silicon + Intel 通用二进制。
+从 [Releases](https://github.com/GuoDaiYi/BambuBar/releases/latest) 下载 **BambuBar-1.3.0-macOS.dmg**，打开后把 **BambuBar** 拖进 **Applications**。安装包内含 Apple Silicon + Intel 通用二进制。
 
 App 使用本地 ad-hoc 签名，未经过公证。如果 macOS 阻止打开，请右键 App 选择「打开」，或执行：
 
@@ -84,27 +88,6 @@ open build/BambuBar.app
 
 BambuBar 主要针对 A1 系列开发。其他使用相同拓竹云 MQTT 数据结构的机型大概率可用，但尚未逐一验证。使用的云端接口并非官方公开 API，拓竹变更服务时可能需要更新。
 
-## 工作原理
-
-```
-SwiftUI MenuBarExtra
-        │
-        ├── CloudAPI（URLSession）
-        │     ├── 登录 / Token / 邮箱或短信验证码
-        │     ├── GET /v1/iot-service/api/user/bind
-        │     └── 中国区 / 国际区
-        │
-        ├── BambuCloud
-        │     └── MQTT 3.1.1 over TLS 8883
-        │           ├── device/{serial}/report
-        │           ├── device/{serial}/request
-        │           └── pause / resume / stop / print_speed / gcode_line
-```
-
-- MQTT 基于 `Network.framework` 从零实现（CONNECT / SUBSCRIBE / PUBLISH / PING，命令使用 QoS 1，自动重连），无第三方依赖。
-- 云 MQTT 用户名 `u_{uid}`，密码为拓竹 Access Token。
-- 程序会识别 `mqtt message verify failed` 等命令拒绝原因，并在界面上提示。
-
 ## 隐私
 
 - 无统计、无遥测、无第三方后端。
@@ -138,5 +121,6 @@ MIT，详见 [LICENSE](LICENSE)。
 ## 致谢
 
 - [OpenBambuAPI](https://github.com/Doridian/OpenBambuAPI)：云端 HTTP/MQTT 协议文档
+- [Tabler Icons](https://tabler.io/icons)（MIT）：界面图标库
 - [Bambu Studio](https://github.com/bambulab/BambuStudio) 及社区逆向项目提供的协议细节
 - 所有分享打印机 MQTT 数据的社区贡献者

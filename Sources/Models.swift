@@ -206,6 +206,9 @@ enum PreparationPhase {
     case preparing
 }
 
+/// Snapshot of a printer's MQTT `print` object.
+/// Fields stay optional/zeroed until the first report arrives; partial P1/A1
+/// updates are merged into the existing values.
 struct PrinterStatus {
     var state: PrintState = .unknown
     var gcodeStateRaw: String = ""
@@ -359,6 +362,9 @@ struct PrinterStatus {
         return state.isBusy ? Lang.t("计算剩余时间…", "Calculating…") : Lang.t("等待任务", "No active job")
     }
 
+    /// Merges a (possibly partial) MQTT status report.
+    /// Bambu printers sometimes send only changed keys, so absent fields must
+    /// keep their previous values.
     mutating func apply(report p: [String: Any], now: Date = Date()) {
         lastUpdate = now
 

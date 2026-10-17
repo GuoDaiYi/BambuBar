@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 
+/// Account, language, printer list and general preferences.
 struct SettingsView: View {
     @EnvironmentObject private var app: AppModel
     @Environment(\.dismiss) private var dismiss
@@ -27,7 +28,7 @@ struct SettingsView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 16)
         }
-        .frame(width: 680, height: 450)
+        .frame(width: 680, height: 440)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
         .onAppear {
@@ -37,9 +38,7 @@ struct SettingsView: View {
 
     private var header: some View {
         HStack(spacing: 9) {
-            Image(systemName: "gearshape.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.green)
+            TBIconView(icon: .settings, size: 13, color: Theme.green)
             Text(Lang.t("设置", "Settings"))
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary)
@@ -47,9 +46,7 @@ struct SettingsView: View {
             Button {
                 dismiss()
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.textSecondary)
+                TBIconView(icon: .close, size: 12, color: Theme.textSecondary)
                     .frame(width: 24, height: 24)
                     .background(Circle().fill(Color.white.opacity(0.06)))
             }
@@ -64,7 +61,7 @@ struct SettingsView: View {
 
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: Lang.t("拓竹账号", "Bambu Lab account"), icon: "person.crop.circle")
+            SectionHeader(title: Lang.t("拓竹账号", "Bambu Lab account"), icon: .user)
             HStack(spacing: 10) {
                 LogoMark(size: 34)
                 VStack(alignment: .leading, spacing: 2) {
@@ -87,48 +84,22 @@ struct SettingsView: View {
                     .background(Capsule().fill(Theme.red.opacity(0.10)))
             }
         }
-        .card(padding: 12, radius: 14)
+        .card(padding: 12, radius: 16)
     }
 
     // MARK: Language
 
     private var languageSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: Lang.t("语言", "Language"), icon: "globe")
-            HStack(spacing: 2) {
-                ForEach(AppLanguage.allCases) { language in
-                    let selected = app.language == language
-                    Button {
-                        app.setLanguage(language)
-                    } label: {
-                        Text(language.title)
-                            .font(.system(size: 10.5, weight: .semibold, design: .rounded))
-                            .foregroundStyle(selected ? Theme.green : Theme.textTertiary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 30)
-                            .background(
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(selected ? Theme.green.opacity(0.15) : Color.clear)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(3)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.black.opacity(0.20))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                    )
-            )
+            SectionHeader(title: Lang.t("语言", "Language"), icon: .language)
+            LanguageToggle()
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .card(padding: 12, radius: 14)
+        .card(padding: 12, radius: 16)
     }
 
     private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.2.0"
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.3.0"
     }
 
     // MARK: Printers
@@ -136,13 +107,16 @@ struct SettingsView: View {
     private var printerSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                SectionHeader(title: Lang.t("打印机", "Printers"), icon: "printer.fill")
+                SectionHeader(title: Lang.t("打印机", "Printers"), icon: .printer)
                 Button {
                     app.refreshDevices()
                 } label: {
-                    Label(Lang.t("刷新", "Refresh"), systemImage: "arrow.clockwise")
-                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary)
+                    HStack(spacing: 4) {
+                        TBIconView(icon: .refresh, size: 10, color: Theme.textSecondary)
+                        Text(Lang.t("刷新", "Refresh"))
+                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                            .foregroundStyle(Theme.textSecondary)
+                    }
                 }
                 .buttonStyle(.plain)
             }
@@ -209,17 +183,17 @@ struct SettingsView: View {
 
     private var generalSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: Lang.t("通用", "General"), icon: "slider.horizontal.3")
+            SectionHeader(title: Lang.t("通用", "General"), icon: .settings)
             VStack(spacing: 0) {
                 toggleRow(
-                    icon: "bell.badge.fill",
+                    icon: .bell,
                     title: Lang.t("打印完成 / 异常通知", "Print finished / error notifications"),
                     subtitle: Lang.t("任务结束时发送 macOS 通知", "Send a macOS notification when a job ends"),
                     isOn: $app.notificationsEnabled
                 )
                 Divider().overlay(Color.white.opacity(0.05)).padding(.leading, 30)
                 toggleRow(
-                    icon: "power",
+                    icon: .power,
                     title: Lang.t("开机自动启动", "Launch at login"),
                     subtitle: Lang.t("登录 macOS 后在菜单栏运行", "Start in the menu bar after you sign in"),
                     isOn: Binding(
@@ -240,11 +214,9 @@ struct SettingsView: View {
         }
     }
 
-    private func toggleRow(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
+    private func toggleRow(icon: TBIcon, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: 9) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Theme.textSecondary)
+            TBIconView(icon: icon, size: 11, color: Theme.textSecondary)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -267,7 +239,7 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 9) {
-            SectionHeader(title: Lang.t("关于", "About"), icon: "info.circle")
+            SectionHeader(title: Lang.t("关于", "About"), icon: .infoCircle)
             HStack(spacing: 8) {
                 Text("BambuBar \(appVersion)")
                     .font(.system(size: 10, weight: .medium, design: .rounded))

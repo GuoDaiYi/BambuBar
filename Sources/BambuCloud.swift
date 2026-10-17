@@ -1,6 +1,7 @@
 import Foundation
 
-/// Owns the single cloud MQTT connection and fans reports out to printer services.
+/// Owns the single cloud MQTT connection, subscribes to every printer topic and
+/// fans reports out to the matching `PrinterService`.
 @MainActor
 final class BambuCloud: ObservableObject {
     @Published private(set) var connected = false

@@ -1,11 +1,15 @@
 import Foundation
 
+/// Per-printer state machine. It merges MQTT reports and sends pause/speed/
+/// temperature commands through the shared cloud connection.
 @MainActor
 final class PrinterService: ObservableObject, Identifiable {
     private(set) var device: CloudDevice
     @Published private(set) var status = PrinterStatus()
     @Published private(set) var isOnline = false
     @Published private(set) var lastCommandAt: Date?
+    /// Set when the firmware rejects an unsigned control command; the UI then
+    /// disables controls instead of causing a loop of HMS errors.
     @Published private(set) var controlWarning: String?
     @Published private(set) var controlBlocked = false
 
@@ -23,6 +27,7 @@ final class PrinterService: ObservableObject, Identifiable {
         self.isOnline = device.online
     }
 
+    /// Handles both status pushes and command acknowledgements.
     func ingest(print: [String: Any]) {
         if let result = print["result"] as? String,
            result.lowercased() == "failed" {
@@ -32,8 +37,8 @@ final class PrinterService: ObservableObject, Identifiable {
             if reason.lowercased().contains("verify") || reason.contains("校验") || code == 84033543 {
                 controlBlocked = true
                 controlWarning = Lang.t(
-                    "固件要求签名命令，云端控制已被拒绝。请更新 Bambu Handy / Studio，或让打印机进入 LAN Only + Developer Mode 后重试。",
-                    "Firmware requires signed commands; cloud control was rejected. Update Bambu Handy / Studio, or use LAN Only + Developer Mode, then retry."
+                    "固件拒绝未签名命令；请使用 Handy/Studio 或 LAN Developer Mode。",
+                    "Firmware rejected unsigned commands. Use Handy/Studio or LAN Developer Mode."
                 )
             } else if !reason.isEmpty {
                 controlWarning = Lang.t("打印机拒绝了命令：\(reason)", "The printer rejected the command: \(reason)")
@@ -53,8 +58,8 @@ final class PrinterService: ObservableObject, Identifiable {
         if status.hasFirmwareCommandError {
             controlBlocked = true
             controlWarning = Lang.t(
-                "打印机报告 MQTT 命令校验失败（HMS 0500-0500-0001-0007）。固件要求签名命令，云端控制已被拒绝。请更新 Bambu Handy / Studio，或使用 LAN Only + Developer Mode。",
-                "The printer reports MQTT command verification failure (HMS 0500-0500-0001-0007). Firmware requires signed commands; cloud control was rejected. Update Bambu Handy / Studio, or use LAN Only + Developer Mode."
+                "固件拒绝未签名命令（HMS 0500-0500-0001-0007）；请使用 Handy/Studio 或 LAN Developer Mode。",
+                "Firmware rejected unsigned commands (HMS 0500-0500-0001-0007). Use Handy/Studio or LAN Developer Mode."
             )
         }
 
@@ -181,8 +186,8 @@ final class PrinterService: ObservableObject, Identifiable {
     private func ensureControlAllowed() -> Bool {
         if controlBlocked {
             controlWarning = Lang.t(
-                "固件要求签名命令，当前无法发送控制命令。请更新 Bambu Handy / Studio，或使用 LAN Only + Developer Mode。",
-                "Firmware requires signed commands. Update Bambu Handy / Studio, or use LAN Only + Developer Mode."
+                "固件拒绝未签名命令；请使用 Handy/Studio 或 LAN Developer Mode。",
+                "Firmware rejected unsigned commands. Use Handy/Studio or LAN Developer Mode."
             )
             return false
         }

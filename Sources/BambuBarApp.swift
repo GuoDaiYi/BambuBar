@@ -53,6 +53,10 @@ struct BambuBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var app = AppModel()
 
+    init() {
+        AppFonts.register()
+    }
+
     var body: some Scene {
         MenuBarExtra {
             RootView()
@@ -69,7 +73,7 @@ struct BambuBarApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
-        .defaultSize(width: 680, height: 450)
+        .defaultSize(width: 680, height: 440)
     }
 }
 

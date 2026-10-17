@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Chooses the correct panel for the current auth state and applies the
+/// popover entrance animation plus main-window auto-hide.
 struct RootView: View {
     @EnvironmentObject private var app: AppModel
 
@@ -23,6 +25,7 @@ struct RootView: View {
         }
         .environment(\.colorScheme, .dark)
         .modifier(PopoverEntrance())
+        .modifier(MainWindowAutoHide(enabled: app.authStep == .ready))
     }
 }
 
@@ -50,6 +53,7 @@ struct LoadingView: View {
 
 // MARK: - Login
 
+/// Two-column sign-in panel: branding on the left, credentials on the right.
 struct LoginView: View {
     @EnvironmentObject private var app: AppModel
     @AppStorage("loginAccount") private var account: String = ""
@@ -90,22 +94,21 @@ struct LoginView: View {
                 .padding(.top, 3)
 
             VStack(alignment: .leading, spacing: 10) {
-                feature("bolt.fill", Lang.t("云端实时状态，进度与温度持续刷新",
-                                            "Live cloud status with progress and temperatures"))
-                feature("slider.horizontal.3", Lang.t("暂停 / 继续、四档调速、取消任务",
-                                                     "Pause, resume, four speed modes and cancel"))
-                feature("bell.badge.fill", Lang.t("打印完成与异常通知",
-                                                  "Print finished and error notifications"))
-                feature("globe", Lang.t("中文 / English 随时切换",
-                                        "Switch between English and Chinese"))
+                feature(.bolt, Lang.t("云端实时状态，进度与温度持续刷新",
+                                      "Live cloud status with progress and temperatures"))
+                feature(.gauge, Lang.t("暂停 / 继续、四档调速、取消任务",
+                                       "Pause, resume, four speed modes and cancel"))
+                feature(.bell, Lang.t("打印完成与异常通知",
+                                      "Print finished and error notifications"))
+                feature(.language, Lang.t("中文 / English 随时切换",
+                                          "Switch between English and Chinese"))
             }
             .padding(.top, 26)
 
             Spacer(minLength: 16)
 
             HStack(alignment: .top, spacing: 6) {
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 9))
+                TBIconView(icon: .shieldLock, size: 10, color: Theme.textTertiary)
                 Text(Lang.t("登录凭证仅保存在本机钥匙串，不会上传",
                             "Credentials stay in the macOS Keychain and never leave this Mac."))
                     .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -117,11 +120,9 @@ struct LoginView: View {
         .padding(.vertical, 24)
     }
 
-    private func feature(_ icon: String, _ text: String) -> some View {
+    private func feature(_ icon: TBIcon, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(Theme.green)
+            TBIconView(icon: icon, size: 10, color: Theme.green)
                 .frame(width: 14)
             Text(text)
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
@@ -141,7 +142,7 @@ struct LoginView: View {
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
-                languageMenu
+                LanguageToggle(compact: true)
             }
             .padding(.bottom, 16)
 
@@ -153,8 +154,7 @@ struct LoginView: View {
 
             if let message = app.authMessage, !message.isEmpty {
                 HStack(alignment: .top, spacing: 6) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 10))
+                    TBIconView(icon: .alertTriangle, size: 10, color: Theme.orange)
                         .foregroundStyle(Theme.orange)
                     Text(message)
                         .font(.system(size: 10.5, weight: .medium, design: .rounded))
@@ -223,8 +223,7 @@ struct LoginView: View {
                     if app.isWorking {
                         ProgressView().controlSize(.small).tint(.black)
                     } else {
-                        Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 12, weight: .semibold))
+                        TBIconView(icon: .arrowRight, size: 12, color: Color(red: 0.02, green: 0.10, blue: 0.06))
                     }
                     Text(app.isWorking ? Lang.t("登录中…", "Signing in…") : Lang.t("登录拓竹账号", "Sign in to Bambu Lab"))
                         .font(.system(size: 12.5, weight: .semibold, design: .rounded))
@@ -244,8 +243,7 @@ struct LoginView: View {
             .padding(.top, 3)
 
             HStack(spacing: 5) {
-                Image(systemName: "envelope.badge")
-                    .font(.system(size: 9, weight: .semibold))
+                TBIconView(icon: .mail, size: 10, color: Theme.textTertiary)
                 Text(Lang.t("支持邮箱或手机短信验证码登录", "Email or SMS verification code supported"))
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
             }
@@ -256,9 +254,7 @@ struct LoginView: View {
     private var codeForm: some View {
         VStack(alignment: .leading, spacing: 11) {
             HStack(spacing: 8) {
-                Image(systemName: "envelope.badge.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.green)
+                TBIconView(icon: .mail, size: 13, color: Theme.green)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(Lang.t("需要邮箱或短信验证码", "Verification required"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -290,8 +286,7 @@ struct LoginView: View {
                     if app.isWorking {
                         ProgressView().controlSize(.small).tint(.black)
                     } else {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12, weight: .semibold))
+                        TBIconView(icon: .check, size: 12, color: Color(red: 0.02, green: 0.10, blue: 0.06))
                     }
                     Text(app.isWorking ? Lang.t("验证中…", "Verifying…") : Lang.t("验证并登录", "Verify and sign in"))
                         .font(.system(size: 12.5, weight: .semibold, design: .rounded))
@@ -322,37 +317,6 @@ struct LoginView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .onAppear { focusedField = .code }
-    }
-
-    private var languageMenu: some View {
-        Menu {
-            ForEach(AppLanguage.allCases) { language in
-                Button {
-                    app.setLanguage(language)
-                } label: {
-                    if app.language == language {
-                        Label(language.title, systemImage: "checkmark")
-                    } else {
-                        Text(language.title)
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "globe")
-                    .font(.system(size: 9, weight: .semibold))
-                Text(app.language.shortTitle)
-                    .font(.system(size: 9.5, weight: .semibold, design: .rounded))
-            }
-            .foregroundStyle(Theme.textSecondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(Color.white.opacity(0.06)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.07), lineWidth: 1))
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
 
     private func fieldLabel(_ text: String) -> some View {

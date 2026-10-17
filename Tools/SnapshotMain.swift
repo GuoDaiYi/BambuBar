@@ -9,6 +9,7 @@ struct SnapshotMain {
 
     static func main() {
         _ = NSApplication.shared
+        AppFonts.register()
         NSApp.setActivationPolicy(.accessory)
         NSApp.appearance = NSAppearance(named: .darkAqua)
 
@@ -24,7 +25,7 @@ struct SnapshotMain {
                 let model = AppModel.demo(language: language)
                 if let service = model.selectedService {
                     let dashboard = DashboardView(service: service).environmentObject(model)
-                    enqueue(dashboard, size: CGSize(width: 620, height: 470),
+                    enqueue(dashboard, size: CGSize(width: 590, height: 450),
                             path: dir.appendingPathComponent("dashboard.png").path)
                 }
 
@@ -33,7 +34,7 @@ struct SnapshotMain {
                 enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 600, height: 400),
                         path: dir.appendingPathComponent("login.png").path)
 
-                enqueue(SettingsView().environmentObject(model), size: CGSize(width: 680, height: 450),
+                enqueue(SettingsView().environmentObject(model), size: CGSize(width: 680, height: 440),
                         path: dir.appendingPathComponent("settings.png").path)
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {

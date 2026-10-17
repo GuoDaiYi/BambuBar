@@ -23,6 +23,7 @@ enum LoginOutcome {
     case needsCode
 }
 
+/// Thin Bambu Cloud REST client used for login, token/UID lookup and devices.
 final class CloudAPI {
     private let urlSession: URLSession
 

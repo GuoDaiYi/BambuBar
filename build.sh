@@ -39,6 +39,14 @@ if [ -f "$ROOT/Assets/AppIcon.icns" ]; then
   cp "$ROOT/Assets/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 fi
 
+# Third-party icon font (Tabler Icons, MIT)
+if [ -f "$ROOT/Assets/ThirdPartyIcons/tabler-icons.ttf" ]; then
+  cp "$ROOT/Assets/ThirdPartyIcons/tabler-icons.ttf" "$APP/Contents/Resources/tabler-icons.ttf"
+fi
+if [ -f "$ROOT/Assets/ThirdPartyIcons/LICENSE" ]; then
+  cp "$ROOT/Assets/ThirdPartyIcons/LICENSE" "$APP/Contents/Resources/TablerIcons-LICENSE.txt"
+fi
+
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
 
 echo "==> built $APP"

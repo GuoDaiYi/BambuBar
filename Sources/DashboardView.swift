@@ -3,6 +3,8 @@ import AppKit
 
 // MARK: - Dashboard
 
+/// Compact landscape dashboard: progress, temperatures and controls.
+/// Camera, AMS and the secondary status panel are intentionally not present.
 struct DashboardView: View {
     @EnvironmentObject private var app: AppModel
     @ObservedObject var service: PrinterService
@@ -30,7 +32,7 @@ struct DashboardView: View {
             .padding(.top, 10)
             .padding(.bottom, 12)
         }
-        .frame(width: 620, height: 470)
+        .frame(width: 590, height: service.controlWarning == nil ? 450 : 470)
         .background(PanelBackground())
         .alert(Lang.t("取消当前打印？", "Cancel this print?"), isPresented: $showStopConfirm) {
             Button(Lang.t("取消打印", "Cancel print"), role: .destructive) { service.stopPrint() }
@@ -51,9 +53,7 @@ struct DashboardView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Theme.green.opacity(0.13))
-                Image(systemName: "printer.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.green)
+                TBIconView(icon: .printer, size: 15, color: Theme.green)
             }
             .frame(width: 31, height: 31)
 
@@ -75,7 +75,26 @@ struct DashboardView: View {
 
             Spacer(minLength: 8)
 
-            languageMenu
+            if let update = app.availableUpdate {
+                Button {
+                    app.openUpdate()
+                } label: {
+                    HStack(spacing: 4) {
+                        TBIconView(icon: .download, size: 9, color: Theme.orange)
+                        Text(update.version)
+                            .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(Theme.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Theme.orange.opacity(0.12)))
+                    .overlay(Capsule().stroke(Theme.orange.opacity(0.24), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .help(Lang.t("有新版本可用，点击前往下载", "A new version is available. Click to download."))
+            }
+
+            LanguageToggle(compact: true)
 
             if app.orderedServices.count > 1 {
                 Menu {
@@ -97,8 +116,7 @@ struct DashboardView: View {
                     Button(Lang.t("退出 BambuBar", "Quit BambuBar")) { app.quit() }
                 } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "arrow.left.arrow.right")
-                            .font(.system(size: 9, weight: .bold))
+                        TBIconView(icon: .arrowsExchange, size: 10, color: Theme.textSecondary)
                         Text(Lang.t("切换", "Switch"))
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                     }
@@ -113,41 +131,10 @@ struct DashboardView: View {
                 .fixedSize()
             }
 
-            RoundIconButton(icon: "gearshape.fill", size: 28) {
+            RoundIconButton(icon: .settings, size: 28) {
                 openWindow(id: "settings")
             }
         }
-    }
-
-    private var languageMenu: some View {
-        Menu {
-            ForEach(AppLanguage.allCases) { language in
-                Button {
-                    app.setLanguage(language)
-                } label: {
-                    if app.language == language {
-                        Label(language.title, systemImage: "checkmark")
-                    } else {
-                        Text(language.title)
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "globe")
-                    .font(.system(size: 9, weight: .semibold))
-                Text(app.language.shortTitle)
-                    .font(.system(size: 9.5, weight: .semibold, design: .rounded))
-            }
-            .foregroundStyle(Theme.textSecondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(Capsule().fill(Color.white.opacity(0.05)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.07), lineWidth: 1))
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
 
     // MARK: Hero
@@ -200,11 +187,11 @@ struct DashboardView: View {
 
                 HStack(spacing: 5) {
                     if status.state == .prepare, !status.phaseText.isEmpty {
-                        InfoChip(icon: "arrow.down.circle.fill", text: status.phaseText)
+                        InfoChip(icon: .download, text: status.phaseText)
                     }
-                    InfoChip(icon: "square.stack.3d.up.fill", text: status.layerText)
-                    InfoChip(icon: "clock.fill", text: status.remainingText)
-                    InfoChip(icon: "speedometer", text: "\(status.speedLabel) · \(status.speedMagnitude)%")
+                    InfoChip(icon: .stack, text: status.layerText)
+                    InfoChip(icon: .clock, text: status.remainingText)
+                    InfoChip(icon: .gauge, text: "\(status.speedLabel) · \(status.speedMagnitude)%")
                 }
             }
         }
@@ -212,9 +199,9 @@ struct DashboardView: View {
         .padding(12)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.white.opacity(0.048))
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -225,7 +212,7 @@ struct DashboardView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .stroke(Color.white.opacity(0.09), lineWidth: 1)
             }
         )
@@ -234,7 +221,7 @@ struct DashboardView: View {
     private var temperatureGrid: some View {
         HStack(spacing: 8) {
             TempTile(
-                icon: "flame.fill",
+                icon: .flame,
                 title: Lang.t("喷嘴", "Nozzle"),
                 current: status.nozzleTemp,
                 target: status.nozzleTarget,
@@ -243,7 +230,7 @@ struct DashboardView: View {
             ) { showTemperatureSheet = true }
 
             TempTile(
-                icon: "rectangle.compress.vertical",
+                icon: .bed,
                 title: Lang.t("热床", "Bed"),
                 current: status.bedTemp,
                 target: status.bedTarget,
@@ -252,7 +239,7 @@ struct DashboardView: View {
             ) { showTemperatureSheet = true }
 
             TempTile(
-                icon: "wind",
+                icon: .wind,
                 title: Lang.t("风扇", "Fan"),
                 current: Double(status.coolingFan),
                 target: 0,
@@ -271,7 +258,7 @@ struct DashboardView: View {
             HStack {
                 SectionHeader(
                     title: Lang.t("打印速度", "Print speed"),
-                    icon: "speedometer",
+                    icon: .gauge,
                     trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil
                 )
             }
@@ -284,11 +271,12 @@ struct DashboardView: View {
 
             if let warning = service.controlWarning {
                 HStack(alignment: .top, spacing: 6) {
-                    Image(systemName: "exclamationmark.shield.fill")
-                        .font(.system(size: 10, weight: .semibold))
+                    TBIconView(icon: .shieldLock, size: 11, color: Theme.orange)
                     Text(warning)
                         .font(.system(size: 9, weight: .medium, design: .rounded))
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .help(warning)
                 }
                 .foregroundStyle(Theme.orange)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -303,7 +291,7 @@ struct DashboardView: View {
 
             actionRow
         }
-        .card(padding: 10, radius: 14)
+        .card(padding: 10, radius: 16)
     }
 
     private var actionRow: some View {
@@ -316,8 +304,8 @@ struct DashboardView: View {
                 }
             } label: {
                 HStack(spacing: 7) {
-                    Image(systemName: status.state.canResume ? "play.fill" : "pause.fill")
-                        .font(.system(size: 11, weight: .bold))
+                    TBIconView(icon: status.state.canResume ? .play : .pause,
+                               size: 12, color: canPauseResume ? Color(red: 0.02, green: 0.10, blue: 0.06) : Theme.textTertiary)
                     Text(status.state.canResume ? Lang.t("继续打印", "Resume print") : Lang.t("暂停打印", "Pause print"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                 }
@@ -336,8 +324,7 @@ struct DashboardView: View {
             Button {
                 showStopConfirm = true
             } label: {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 12, weight: .bold))
+                TBIconView(icon: .stop, size: 13, color: canStop ? Theme.red : Theme.textTertiary)
                     .frame(width: 40, height: 34)
                     .contentShape(Rectangle())
                     .foregroundStyle(canStop ? Theme.red : Theme.textTertiary)
@@ -353,7 +340,7 @@ struct DashboardView: View {
             .buttonStyle(.plain)
             .disabled(!canStop)
 
-            RoundIconButton(icon: "arrow.clockwise", size: 34) {
+            RoundIconButton(icon: .refresh, size: 34) {
                 service.refresh()
             }
         }

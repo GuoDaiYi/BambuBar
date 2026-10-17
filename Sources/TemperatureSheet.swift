@@ -18,9 +18,7 @@ struct TemperatureSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: "thermometer.medium")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.orange)
+                TBIconView(icon: .thermometer, size: 13, color: Theme.orange)
                 Text(Lang.t("温度与风扇", "Temperature & fans"))
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
@@ -36,7 +34,7 @@ struct TemperatureSheet: View {
 
             VStack(spacing: 14) {
                 controlRow(
-                    icon: "flame.fill",
+                    icon: .flame,
                     title: Lang.t("喷嘴温度", "Nozzle temperature"),
                     current: service.status.nozzleTemp,
                     tint: Theme.orange,
@@ -45,7 +43,7 @@ struct TemperatureSheet: View {
                     suffix: "°C"
                 )
                 controlRow(
-                    icon: "rectangle.compress.vertical",
+                    icon: .bed,
                     title: Lang.t("热床温度", "Bed temperature"),
                     current: service.status.bedTemp,
                     tint: Theme.red,
@@ -54,7 +52,7 @@ struct TemperatureSheet: View {
                     suffix: "°C"
                 )
                 controlRow(
-                    icon: "wind",
+                    icon: .wind,
                     title: Lang.t("模型风扇", "Part cooling fan"),
                     current: Double(service.status.coolingFan),
                     tint: Theme.cyan,
@@ -97,13 +95,11 @@ struct TemperatureSheet: View {
         .environment(\.colorScheme, .dark)
     }
 
-    private func controlRow(icon: String, title: String, current: Double, tint: Color,
+    private func controlRow(icon: TBIcon, title: String, current: Double, tint: Color,
                             value: Binding<Double>, range: ClosedRange<Double>, suffix: String) -> some View {
         VStack(spacing: 7) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(tint)
+                TBIconView(icon: icon, size: 10, color: tint)
                     .frame(width: 16)
                 Text(title)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))

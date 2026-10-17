@@ -22,6 +22,31 @@ struct VisualEffectView: NSViewRepresentable {
     }
 }
 
+/// Rounds the actual hosting window, not only the SwiftUI cards.
+struct WindowCornerRadius: NSViewRepresentable {
+    var radius: CGFloat = 18
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { apply(to: view.window) }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { apply(to: nsView.window) }
+    }
+
+    private func apply(to window: NSWindow?) {
+        guard let window, let content = window.contentView else { return }
+        content.wantsLayer = true
+        content.layer?.cornerRadius = radius
+        content.layer?.masksToBounds = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
+    }
+}
+
+/// Shared dark glass background used by every window.
 struct PanelBackground: View {
     var body: some View {
         ZStack {
@@ -45,6 +70,7 @@ struct PanelBackground: View {
             )
         }
         .environment(\.colorScheme, .dark)
+        .background(WindowCornerRadius(radius: 18))
     }
 }
 
@@ -52,7 +78,7 @@ struct PanelBackground: View {
 
 struct CardSurface: ViewModifier {
     var padding: CGFloat = 14
-    var radius: CGFloat = 16
+    var radius: CGFloat = 18
     var strong: Bool = false
 
     func body(content: Content) -> some View {
@@ -70,7 +96,7 @@ struct CardSurface: ViewModifier {
 }
 
 extension View {
-    func card(padding: CGFloat = 14, radius: CGFloat = 16, strong: Bool = false) -> some View {
+    func card(padding: CGFloat = 14, radius: CGFloat = 18, strong: Bool = false) -> some View {
         modifier(CardSurface(padding: padding, radius: radius, strong: strong))
     }
 }
@@ -132,14 +158,13 @@ struct StateBadge: View {
 }
 
 struct InfoChip: View {
-    let icon: String
+    let icon: TBIcon
     let text: String
     var tint: Color = Theme.textSecondary
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
+            TBIconView(icon: icon, size: 9, color: tint)
             Text(text)
                 .font(.system(size: 10, weight: .medium, design: .rounded))
                 .lineLimit(1)
@@ -156,15 +181,13 @@ struct InfoChip: View {
 
 struct SectionHeader: View {
     let title: String
-    var icon: String? = nil
+    var icon: TBIcon? = nil
     var trailing: String? = nil
 
     var body: some View {
         HStack(spacing: 6) {
             if let icon {
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Theme.textSecondary)
+                TBIconView(icon: icon, size: 10, color: Theme.textSecondary)
             }
             Text(title)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -188,12 +211,12 @@ struct SpeedSelector: View {
     let enabled: Bool
     let onSelect: (Int) -> Void
 
-    private var items: [(Int, String, String)] {
+    private var items: [(Int, String, TBIcon)] {
         [
-            (1, Lang.t("静音", "Silent"), "tortoise.fill"),
-            (2, Lang.t("标准", "Standard"), "equal"),
-            (3, Lang.t("运动", "Sport"), "hare.fill"),
-            (4, Lang.t("狂暴", "Ludicrous"), "bolt.fill")
+            (1, Lang.t("静音", "Silent"), .volumeOff),
+            (2, Lang.t("标准", "Standard"), .equal),
+            (3, Lang.t("运动", "Sport"), .rocket),
+            (4, Lang.t("狂暴", "Ludicrous"), .bolt)
         ]
     }
 
@@ -205,8 +228,7 @@ struct SpeedSelector: View {
                     onSelect(item.0)
                 } label: {
                     VStack(spacing: 3) {
-                        Image(systemName: item.2)
-                            .font(.system(size: 12, weight: .semibold))
+                        TBIconView(icon: item.2, size: 13, color: selected ? Theme.green : Theme.textSecondary)
                         Text(item.1)
                             .font(.system(size: 9, weight: .medium, design: .rounded))
                     }
@@ -238,7 +260,7 @@ struct SpeedSelector: View {
 // MARK: - Temperature tile
 
 struct TempTile: View {
-    let icon: String
+    let icon: TBIcon
     let title: String
     let current: Double
     let target: Double
@@ -252,9 +274,7 @@ struct TempTile: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Image(systemName: icon)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(tint)
+                    TBIconView(icon: icon, size: 11, color: tint)
                     Spacer()
                     Text(title)
                         .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -276,10 +296,10 @@ struct TempTile: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Color.white.opacity(0.045))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(Color.white.opacity(0.06), lineWidth: 1)
                     )
             )
@@ -292,16 +312,14 @@ struct TempTile: View {
 // MARK: - Buttons
 
 struct RoundIconButton: View {
-    let icon: String
+    let icon: TBIcon
     var tint: Color = Theme.textSecondary
     var size: CGFloat = 30
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(tint)
+            TBIconView(icon: icon, size: 13, color: tint)
                 .frame(width: size, height: size)
                 .background(Circle().fill(Color.white.opacity(0.06)))
                 .overlay(Circle().stroke(Color.white.opacity(0.07), lineWidth: 1))
@@ -331,9 +349,7 @@ struct LogoMark: View {
                         .stroke(Theme.green.opacity(0.18), lineWidth: 1)
                 )
                 .shadow(color: Theme.green.opacity(0.18), radius: 10, y: 4)
-            Image(systemName: "printer.fill")
-                .font(.system(size: size * 0.44, weight: .semibold))
-                .foregroundStyle(Theme.green)
+            TBIconView(icon: .printer, size: size * 0.42, color: Theme.green)
                 .shadow(color: Theme.green.opacity(0.35), radius: 6)
         }
         .frame(width: size, height: size)
@@ -409,6 +425,46 @@ struct LabeledValue: View {
     }
 }
 
+
+// MARK: - Language toggle
+
+/// Two large segmented targets; the whole tile is clickable, not just the text.
+/// Two large segmented language targets. The whole tile is a hit target.
+struct LanguageToggle: View {
+    @EnvironmentObject private var app: AppModel
+    var compact: Bool = false
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(AppLanguage.allCases) { language in
+                let selected = app.language == language
+                Button {
+                    app.setLanguage(language)
+                } label: {
+                    Text(language.shortTitle)
+                        .font(.system(size: compact ? 9.5 : 10.5, weight: .semibold, design: .rounded))
+                        .foregroundStyle(selected ? Theme.green : Theme.textTertiary)
+                        .frame(width: compact ? 36 : 110, height: compact ? 28 : 30)
+                        .contentShape(Rectangle())
+                        .background(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(selected ? Theme.green.opacity(0.15) : Color.clear)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.black.opacity(0.20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                )
+        )
+    }
+}
 
 // MARK: - Popover animation
 

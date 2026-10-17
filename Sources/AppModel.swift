@@ -13,6 +13,8 @@ enum AuthStep: Equatable {
     case ready
 }
 
+/// App-wide coordinator: cloud session, printer list, language, update checks
+/// and the periodic freshness timer for all printer services.
 @MainActor
 final class AppModel: ObservableObject {
     @Published var session: CloudSession?
@@ -49,6 +51,7 @@ final class AppModel: ObservableObject {
         }
     }
     @Published var lastRefresh: Date?
+    @Published var availableUpdate: UpdateInfo?
 
     private let api = CloudAPI()
     private let cloud = BambuCloud()
@@ -57,6 +60,7 @@ final class AppModel: ObservableObject {
     private var bootstrapped = false
     private var serviceObservers: [String: AnyCancellable] = [:]
     private var isDemo = false
+    private var checkingUpdate = false
 
     private enum Keys {
         static let selected = "selectedPrinter"
@@ -64,6 +68,8 @@ final class AppModel: ObservableObject {
         static let region = "loginRegion"
         static let account = "loginAccount"
         static let language = "appLanguage"
+        static let updateCheck = "lastUpdateCheck"
+        static let updateNotified = "lastUpdateNotified"
     }
 
     init(startNetwork: Bool = true) {
@@ -200,6 +206,7 @@ final class AppModel: ObservableObject {
 
     // MARK: - Bootstrap / auth
 
+    /// Restores a saved cloud session and loads the bound printers on launch.
     private func bootstrap() async {
         guard !bootstrapped else { return }
         bootstrapped = true
@@ -310,6 +317,7 @@ final class AppModel: ObservableObject {
         Task { await loadDevices(startCloud: true) }
     }
 
+    /// Fetches bound devices and creates/updates one `PrinterService` per device.
     private func loadDevices(startCloud: Bool) async {
         guard let session else { return }
         do {
@@ -325,6 +333,7 @@ final class AppModel: ObservableObject {
                 return
             }
             authStep = .ready
+            checkForUpdates()
             if selectedID.isEmpty || services[selectedID] == nil {
                 if let first = fetched.first(where: { $0.online }) ?? fetched.first {
                     selectedID = first.serial
@@ -369,6 +378,42 @@ final class AppModel: ObservableObject {
         }
         services = next
         serviceObservers = observers
+    }
+
+    // MARK: - Update check
+
+    private var appVersion: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.3.0"
+    }
+
+    /// Checks the public GitHub Releases API at most once every six hours.
+    /// A small badge is shown when a newer version exists.
+    func checkForUpdates(force: Bool = false) {
+        guard !isDemo, !checkingUpdate else { return }
+        let last = UserDefaults.standard.object(forKey: Keys.updateCheck) as? Date ?? .distantPast
+        if !force, Date().timeIntervalSince(last) < 6 * 60 * 60 { return }
+        checkingUpdate = true
+        UserDefaults.standard.set(Date(), forKey: Keys.updateCheck)
+        let current = appVersion
+        Task {
+            let update = await UpdateChecker.fetchLatest(currentVersion: current)
+            checkingUpdate = false
+            availableUpdate = update
+            guard let update else { return }
+            let notified = UserDefaults.standard.string(forKey: Keys.updateNotified)
+            if notified != update.version, notificationsEnabled {
+                UserDefaults.standard.set(update.version, forKey: Keys.updateNotified)
+                NotificationManager.shared.notify(
+                    title: Lang.t("BambuBar \(update.version) 可用", "BambuBar \(update.version) is available"),
+                    body: Lang.t("点击菜单栏中的更新提示前往下载。", "Open the update badge in the menu bar panel to download it.")
+                )
+            }
+        }
+    }
+
+    func openUpdate() {
+        guard let update = availableUpdate else { return }
+        NSWorkspace.shared.open(update.url)
     }
 
     private func wireCloud() {
