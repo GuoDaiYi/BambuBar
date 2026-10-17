@@ -27,7 +27,7 @@ struct SettingsView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 16)
         }
-        .frame(width: 720, height: 480)
+        .frame(width: 680, height: 450)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
         .onAppear {
@@ -128,7 +128,7 @@ struct SettingsView: View {
     }
 
     private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.1.0"
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.2.0"
     }
 
     // MARK: Printers
@@ -193,49 +193,6 @@ struct SettingsView: View {
                 .disabled(app.selectedID == device.serial)
             }
 
-            HStack(spacing: 6) {
-                Text("SN \(device.serial)")
-                    .font(.system(size: 8.5, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Theme.textTertiary)
-                Text("·")
-                    .foregroundStyle(Theme.textTertiary)
-                Text(Lang.t("访问码 \(masked(device.accessCode))", "Access code \(masked(device.accessCode))"))
-                    .font(.system(size: 8.5, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Theme.textTertiary)
-            }
-
-            HStack(spacing: 7) {
-                Image(systemName: "network")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.textTertiary)
-                TextField(Lang.t("局域网 IP（摄像头用）", "LAN IP (camera)"), text: Binding(
-                    get: { app.manualIPs[device.serial] ?? "" },
-                    set: { app.setManualIP($0, for: device.serial) }
-                ))
-                .textFieldStyle(.plain)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(Theme.textPrimary)
-                .padding(.horizontal, 8)
-                .frame(height: 27)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Color.black.opacity(0.20))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                        )
-                )
-                if let ip = app.services[device.serial]?.status.ipAddress, !ip.isEmpty {
-                    Button {
-                        app.setManualIP(ip, for: device.serial)
-                    } label: {
-                        Text(Lang.t("使用 \(ip)", "Use \(ip)"))
-                            .font(.system(size: 8.5, weight: .medium, design: .rounded))
-                            .foregroundStyle(Theme.cyan)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
         }
         .padding(11)
         .background(
@@ -332,8 +289,8 @@ struct SettingsView: View {
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.red)
             }
-            Text(Lang.t("摄像头通过打印机局域网 6000 端口直连；填写 IP 后才会显示摄像头。远程网络下云端画面使用私有协议，暂不支持。",
-                        "The camera connects directly to the printer on port 6000 and only appears after you enter a LAN IP. Cloud camera streaming uses a proprietary protocol and is not supported."))
+            Text(Lang.t("拓竹固件在云端/普通局域网模式下会校验 MQTT 控制命令；未授权的第三方命令可能被拒绝。",
+                        "Bambu firmware verifies MQTT control commands in cloud and standard LAN modes; unsigned third-party commands may be rejected."))
                 .font(.system(size: 9, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)

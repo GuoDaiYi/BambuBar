@@ -10,33 +10,27 @@ struct DashboardView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var showStopConfirm = false
     @State private var showTemperatureSheet = false
-    @State private var showCameraSheet = false
 
     private var status: PrinterStatus { service.status }
-    private var cameraEnabled: Bool {
-        app.cameraHost(for: service) != nil && status.cameraAvailable
-    }
 
     var body: some View {
         VStack(spacing: 0) {
             header
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
 
             Divider().overlay(Color.white.opacity(0.06))
 
-            HStack(alignment: .top, spacing: 12) {
-                leftColumn
-                    .frame(width: 440)
-                rightColumn
-                    .frame(width: 300)
+            VStack(spacing: 9) {
+                heroCard
+                temperatureGrid
+                controlCard
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
             .padding(.bottom, 12)
         }
-        .frame(width: 784, height: 500)
+        .frame(width: 620, height: 470)
         .background(PanelBackground())
         .alert(Lang.t("取消当前打印？", "Cancel this print?"), isPresented: $showStopConfirm) {
             Button(Lang.t("取消打印", "Cancel print"), role: .destructive) { service.stopPrint() }
@@ -48,19 +42,12 @@ struct DashboardView: View {
         .sheet(isPresented: $showTemperatureSheet) {
             TemperatureSheet(service: service)
         }
-        .sheet(isPresented: $showCameraSheet) {
-            CameraSheet(
-                name: service.device.name,
-                host: app.cameraHost(for: service) ?? "",
-                accessCode: service.device.accessCode
-            )
-        }
     }
 
     // MARK: Header
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 9) {
             ZStack {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Theme.green.opacity(0.13))
@@ -68,7 +55,7 @@ struct DashboardView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.green)
             }
-            .frame(width: 32, height: 32)
+            .frame(width: 31, height: 31)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 5) {
@@ -87,18 +74,6 @@ struct DashboardView: View {
             }
 
             Spacer(minLength: 8)
-
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(app.cloudConnected ? Theme.green : Theme.orange)
-                    .frame(width: 5, height: 5)
-                Text(app.cloudConnected ? Lang.t("云端已连接", "Cloud") : Lang.t("重连中", "Reconnecting"))
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textTertiary)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(Capsule().fill(Color.white.opacity(0.05)))
 
             languageMenu
 
@@ -175,29 +150,21 @@ struct DashboardView: View {
         .fixedSize()
     }
 
-    // MARK: Left column
-
-    private var leftColumn: some View {
-        VStack(spacing: 10) {
-            heroCard
-            temperatureGrid
-            controlCard
-        }
-    }
+    // MARK: Hero
 
     private var heroCard: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: 14) {
             ZStack {
                 ProgressRing(
                     progress: status.state == .idle ? 0 : Double(status.progress) / 100,
                     tint: service.isOnline ? status.state.tint : Color.white.opacity(0.35),
                     lineWidth: 7,
-                    size: 106
+                    size: 92
                 )
                 VStack(spacing: 1) {
                     if service.isOnline, status.state.isBusy || status.state == .finished {
                         Text("\(status.progress)")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundStyle(Theme.textPrimary)
                             .monospacedDigit()
                         Text("%")
@@ -205,7 +172,7 @@ struct DashboardView: View {
                             .foregroundStyle(Theme.textTertiary)
                     } else {
                         Image(systemName: service.isOnline ? status.state.symbol : "wifi.slash")
-                            .font(.system(size: 25, weight: .medium))
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundStyle(service.isOnline ? status.state.tint : Color.white.opacity(0.35))
                         Text(service.isOnline ? status.state.shortLabel : Lang.t("离线", "Offline"))
                             .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -214,7 +181,7 @@ struct DashboardView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 7) {
                 HStack(spacing: 6) {
                     StateBadge(state: status.state, online: service.isOnline)
                     if status.state == .running, let eta = status.etaText {
@@ -232,6 +199,9 @@ struct DashboardView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 5) {
+                    if status.state == .prepare, !status.phaseText.isEmpty {
+                        InfoChip(icon: "arrow.down.circle.fill", text: status.phaseText)
+                    }
                     InfoChip(icon: "square.stack.3d.up.fill", text: status.layerText)
                     InfoChip(icon: "clock.fill", text: status.remainingText)
                     InfoChip(icon: "speedometer", text: "\(status.speedLabel) · \(status.speedMagnitude)%")
@@ -239,7 +209,7 @@ struct DashboardView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(12)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -294,8 +264,10 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: Controls
+
     private var controlCard: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: 8) {
             HStack {
                 SectionHeader(
                     title: Lang.t("打印速度", "Print speed"),
@@ -303,9 +275,32 @@ struct DashboardView: View {
                     trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil
                 )
             }
-            SpeedSelector(level: status.speedLevel, enabled: service.isOnline && status.state.isBusy) { level in
+            SpeedSelector(
+                level: status.speedLevel,
+                enabled: service.isOnline && status.state.isBusy && !service.controlBlocked
+            ) { level in
                 service.setSpeed(level)
             }
+
+            if let warning = service.controlWarning {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.shield.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(warning)
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(Theme.orange)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(Lang.t("重试", "Retry")) {
+                    service.clearControlBlock()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                .foregroundStyle(Theme.orange)
+            }
+
             actionRow
         }
         .card(padding: 10, radius: 14)
@@ -329,10 +324,10 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 34)
                 .foregroundStyle(canPauseResume ? Color(red: 0.02, green: 0.10, blue: 0.06) : Theme.textTertiary)
+                .contentShape(Rectangle())
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(canPauseResume ? Theme.green : Color.white.opacity(0.06))
-                        .shadow(color: canPauseResume ? Theme.green.opacity(0.25) : .clear, radius: 6)
                 )
             }
             .buttonStyle(.plain)
@@ -344,18 +339,19 @@ struct DashboardView: View {
                 Image(systemName: "stop.fill")
                     .font(.system(size: 12, weight: .bold))
                     .frame(width: 40, height: 34)
-                    .foregroundStyle(status.state.isBusy ? Theme.red : Theme.textTertiary)
+                    .contentShape(Rectangle())
+                    .foregroundStyle(canStop ? Theme.red : Theme.textTertiary)
                     .background(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Theme.red.opacity(status.state.isBusy ? 0.13 : 0.04))
+                            .fill(Theme.red.opacity(canStop ? 0.13 : 0.04))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(Theme.red.opacity(status.state.isBusy ? 0.22 : 0.06), lineWidth: 1)
+                                    .stroke(Theme.red.opacity(canStop ? 0.22 : 0.06), lineWidth: 1)
                             )
                     )
             }
             .buttonStyle(.plain)
-            .disabled(!status.state.isBusy)
+            .disabled(!canStop)
 
             RoundIconButton(icon: "arrow.clockwise", size: 34) {
                 service.refresh()
@@ -364,247 +360,10 @@ struct DashboardView: View {
     }
 
     private var canPauseResume: Bool {
-        service.isOnline && (status.state.canPause || status.state.canResume)
+        service.isOnline && (status.state.canPause || status.state.canResume) && !service.controlBlocked
     }
 
-    // MARK: Right column
-
-    private var rightColumn: some View {
-        VStack(spacing: 10) {
-            if cameraEnabled, let host = app.cameraHost(for: service) {
-                VStack(spacing: 7) {
-                    SectionHeader(
-                        title: Lang.t("实时画面", "Live camera"),
-                        icon: "video.fill",
-                        trailing: Lang.t("局域网", "LAN")
-                    )
-                    CameraPreview(host: host, accessCode: service.device.accessCode, height: 150) {
-                        showCameraSheet = true
-                    }
-                }
-                .card(padding: 9, radius: 14)
-            }
-
-            amsSection
-
-            statusCard
-
-            Spacer(minLength: 0)
-        }
-    }
-
-    @ViewBuilder
-    private var amsSection: some View {
-        if status.hasAMS {
-            VStack(spacing: 6) {
-                SectionHeader(
-                    title: Lang.t("AMS 耗材", "AMS filament"),
-                    icon: "circle.grid.2x2.fill",
-                    trailing: amsTrailing
-                )
-                HStack(spacing: 0) {
-                    if status.amsTrays.isEmpty, let external = status.externalTray {
-                        SpoolView(tray: external)
-                    } else {
-                        ForEach(displayTrays) { tray in
-                            SpoolView(tray: tray)
-                        }
-                        if let external = status.externalTray, !external.isEmpty {
-                            SpoolView(tray: external)
-                        }
-                    }
-                }
-            }
-            .card(padding: 9, radius: 14)
-        }
-    }
-
-    private var statusCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionHeader(
-                title: Lang.t("打印机状态", "Printer status"),
-                icon: "dot.radiowaves.left.and.right",
-                trailing: status.lastUpdate.map { timeString($0) }
-            )
-            HStack(spacing: 8) {
-                statusLine(icon: "wifi", text: wifiText)
-                Divider().frame(height: 10).overlay(Color.white.opacity(0.08))
-                statusLine(icon: "cloud.fill", text: app.cloudConnected ? Lang.t("云端", "Cloud") : Lang.t("重连中", "Reconnecting"))
-                Spacer()
-            }
-            HStack(spacing: 8) {
-                statusLine(icon: "gauge", text: status.stageText)
-                Spacer()
-                if status.printError != 0 {
-                    statusLine(icon: "exclamationmark.triangle.fill",
-                               text: "\(Lang.t("错误", "Error")) \(status.printError)",
-                               tint: Theme.red)
-                }
-            }
-        }
-        .card(padding: 9, radius: 14)
-    }
-
-    private var wifiText: String {
-        guard let signal = status.wifiSignal else { return "—" }
-        return "\(signal) dBm"
-    }
-
-    private func statusLine(icon: String, text: String, tint: Color = Theme.textTertiary) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(tint)
-            Text(text)
-                .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                .foregroundStyle(tint)
-                .lineLimit(1)
-        }
-    }
-
-    private var amsTrailing: String? {
-        var parts: [String] = []
-        if let h = status.amsHumidity { parts.append(Lang.t("湿度 \(h)%", "Humidity \(h)%")) }
-        if let t = status.amsTemp { parts.append("\(Int(t.rounded()))°C") }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
-    }
-
-    private var displayTrays: [AMSTray] {
-        let existing = Dictionary(uniqueKeysWithValues: status.amsTrays.map { ($0.slot, $0) })
-        return (0..<4).map { slot in
-            existing[slot] ?? AMSTray(id: slot, slot: slot, type: "", colorHex: "30343CFF", remain: nil)
-        }
-    }
-
-    private func timeString(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
-        return f.string(from: date)
-    }
-}
-
-// MARK: - Camera preview
-
-struct CameraPreview: View {
-    let host: String
-    let accessCode: String
-    var height: CGFloat = 160
-    var onExpand: () -> Void = {}
-
-    @StateObject private var camera = CameraClient()
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.black.opacity(0.45))
-
-            if let image = camera.image {
-                Image(nsImage: image)
-                    .resizable()
-                    .interpolation(.medium)
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                VStack(spacing: 7) {
-                    if camera.connected {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Image(systemName: "video.slash")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundStyle(Theme.textTertiary)
-                    }
-                    Text(camera.errorText ?? Lang.t("正在连接摄像头…", "Connecting camera…"))
-                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textTertiary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
-            }
-
-            VStack {
-                HStack {
-                    if camera.connected {
-                        HStack(spacing: 4) {
-                            Circle().fill(Theme.red).frame(width: 4, height: 4)
-                            Text("LIVE")
-                                .font(.system(size: 8, weight: .bold, design: .rounded))
-                                .tracking(0.6)
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Capsule().fill(Color.black.opacity(0.5)))
-                    }
-                    Spacer()
-                    Button(action: onExpand) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 23, height: 23)
-                            .background(Circle().fill(Color.black.opacity(0.5)))
-                    }
-                    .buttonStyle(.plain)
-                }
-                Spacer()
-            }
-            .padding(8)
-        }
-        .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .onAppear {
-            camera.start(host: host, accessCode: accessCode)
-        }
-        .onDisappear {
-            camera.stop()
-        }
-    }
-}
-
-struct CameraSheet: View {
-    let name: String
-    let host: String
-    let accessCode: String
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var camera = CameraClient()
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "video.fill")
-                    .foregroundStyle(Theme.green)
-                Text(Lang.t("\(name) · 实时画面", "\(name) · Live camera"))
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer()
-                Button(Lang.t("关闭", "Close")) { dismiss() }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Theme.textSecondary)
-            }
-            .padding(14)
-            ZStack {
-                Color.black
-                if let image = camera.image {
-                    Image(nsImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                } else {
-                    VStack(spacing: 8) {
-                        ProgressView()
-                        Text(camera.errorText ?? Lang.t("正在连接摄像头…", "Connecting camera…"))
-                            .font(.system(size: 11))
-                            .foregroundStyle(Theme.textTertiary)
-                    }
-                }
-            }
-            .frame(width: 720, height: 405)
-        }
-        .frame(width: 720, height: 455)
-        .background(PanelBackground())
-        .onAppear { camera.start(host: host, accessCode: accessCode) }
-        .onDisappear { camera.stop() }
+    private var canStop: Bool {
+        status.state.isBusy && !service.controlBlocked
     }
 }

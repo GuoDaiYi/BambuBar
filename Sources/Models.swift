@@ -129,7 +129,7 @@ enum PrintState: String, Codable {
     init(gcode: String?) {
         switch (gcode ?? "").uppercased() {
         case "IDLE": self = .idle
-        case "PREPARE": self = .prepare
+        case "PREPARE", "DOWNLOADING", "UNPACKING": self = .prepare
         case "RUNNING": self = .running
         case "PAUSE", "PAUSED": self = .paused
         case "FINISH", "FINISHED": self = .finished
@@ -177,58 +177,6 @@ enum PrintState: String, Codable {
     }
 }
 
-// MARK: - AMS
-
-struct AMSTray: Identifiable, Hashable {
-    var id: Int
-    var slot: Int
-    var type: String
-    var colorHex: String
-    var remain: Int?
-    var brand: String
-    var name: String
-    var isExternal: Bool
-    var isActive: Bool
-
-    var isEmpty: Bool { type.isEmpty }
-    var displayType: String { type.isEmpty ? Lang.t("空", "Empty") : type }
-
-    var remainText: String {
-        guard let r = remain, r >= 0 else { return "—" }
-        return "\(r)%"
-    }
-
-    init(id: Int, slot: Int, type: String, colorHex: String, remain: Int?,
-         brand: String = "", name: String = "", isExternal: Bool = false, isActive: Bool = false) {
-        self.id = id
-        self.slot = slot
-        self.type = type
-        self.colorHex = colorHex
-        self.remain = remain
-        self.brand = brand
-        self.name = name
-        self.isExternal = isExternal
-        self.isActive = isActive
-    }
-
-    init?(json: [String: Any], slot: Int, isActive: Bool, isExternal: Bool) {
-        let type = (json["tray_type"] as? String) ?? ""
-        let color = (json["tray_color"] as? String) ?? (json["cols"] as? [String])?.first ?? "808080FF"
-        if type.isEmpty && !isExternal { return nil }
-        self.id = isExternal ? 254 : slot
-        self.slot = slot
-        self.type = type
-        self.colorHex = color
-        var r = Parse.intValue(json["remain"])
-        if let rr = r, rr < 0 { r = nil }
-        self.remain = r
-        self.brand = (json["tray_sub_brands"] as? String) ?? ""
-        self.name = (json["tray_id_name"] as? String) ?? ""
-        self.isExternal = isExternal
-        self.isActive = isActive
-    }
-}
-
 struct HMSItem: Identifiable, Hashable {
     var code: Int
     var attr: Int
@@ -251,6 +199,13 @@ struct HMSItem: Identifiable, Hashable {
 
 // MARK: - Status
 
+enum PreparationPhase {
+    case none
+    case downloading
+    case unpacking
+    case preparing
+}
+
 struct PrinterStatus {
     var state: PrintState = .unknown
     var gcodeStateRaw: String = ""
@@ -270,14 +225,10 @@ struct PrinterStatus {
     var chamberFan: Int = 0
     var jobName: String = ""
     var gcodeFile: String = ""
+    var preparePercent: Int?
+    var uploadStatus: String?
+    var mcPrintStage: Int?
     var wifiSignal: Int?
-    var amsTrays: [AMSTray] = []
-    var externalTray: AMSTray?
-    var amsHumidity: Int?
-    var amsTemp: Double?
-    var activeTray: Int?
-    var ipAddress: String?
-    var cameraAvailable: Bool = false
     var hms: [HMSItem] = []
     var printError: Int = 0
     var stage: Int = -1
@@ -286,7 +237,54 @@ struct PrinterStatus {
     var printStartedAt: Date?
     var totalTimeMinutes: Int = 0
 
-    var hasAMS: Bool { !amsTrays.isEmpty || externalTray != nil }
+    var preparationPhase: PreparationPhase {
+        guard state == .prepare else { return .none }
+        let raw = gcodeStateRaw.uppercased()
+        if raw == "DOWNLOADING" { return .downloading }
+        if raw == "UNPACKING" { return .unpacking }
+        let status = (uploadStatus ?? "").lowercased()
+        if status.contains("download") || status.contains("upload") || status.contains("transfer") {
+            return .downloading
+        }
+        if let percent = preparePercent, percent > 0, percent < 100 {
+            return .downloading
+        }
+        if let percent = preparePercent, percent >= 100 {
+            return .unpacking
+        }
+        if mcPrintStage == 1 {
+            return .unpacking
+        }
+        return .preparing
+    }
+
+    var phaseText: String {
+        switch preparationPhase {
+        case .none: return ""
+        case .downloading: return Lang.t("下载中", "Downloading")
+        case .unpacking: return Lang.t("解压中", "Unpacking")
+        case .preparing: return Lang.t("准备中", "Preparing")
+        }
+    }
+
+    var phaseShortText: String {
+        switch preparationPhase {
+        case .none: return ""
+        case .downloading: return Lang.t("下载", "Download")
+        case .unpacking: return Lang.t("解压", "Unpack")
+        case .preparing: return Lang.t("准备", "Prep")
+        }
+    }
+
+    var hasFirmwareCommandError: Bool {
+        hms.contains { item in
+            let attr = item.attr
+            return (attr == 0x0500 || attr == 0x05000000)
+                && item.code == 0x0001
+                && item.module == 0x0007
+        }
+    }
+
     var displayName: String {
         if !jobName.isEmpty { return jobName }
         if !gcodeFile.isEmpty { return gcodeFile }
@@ -319,7 +317,10 @@ struct PrinterStatus {
         if state == .failed { return Lang.t("打印异常", "Print error") }
         if state == .paused { return Lang.t("已暂停", "Paused") }
         if state == .idle { return Lang.t("准备就绪", "Ready") }
-        if state == .prepare { return Lang.t("正在准备", "Preparing") }
+        if state == .prepare {
+            let phase = phaseText
+            return phase.isEmpty ? Lang.t("正在准备", "Preparing") : phase
+        }
         let codes: [Int: (String, String)] = [
             0: ("打印中", "Printing"), 1: ("自动调平", "Auto bed leveling"),
             2: ("热床预热", "Bed heating"), 3: ("振动补偿", "Vibration compensation"),
@@ -401,44 +402,10 @@ struct PrinterStatus {
         if let e = Parse.intValue(p["print_error"]) { printError = e }
         if let s = Parse.intValue(p["stg_cur"]) { stage = s }
 
-        if let ams = p["ams"] as? [String: Any], let units = ams["ams"] as? [[String: Any]] {
-            let active = Parse.intValue(ams["tray_now"])
-            var trays: [AMSTray] = []
-            for unit in units {
-                let unitID = Parse.intValue(unit["id"]) ?? 0
-                if let hum = Parse.intValue(unit["humidity"]) { amsHumidity = hum }
-                if let temp = Parse.doubleValue(unit["temp"]) { amsTemp = temp }
-                let list = (unit["tray"] as? [[String: Any]]) ?? []
-                for t in list {
-                    let trayID = Parse.intValue(t["id"]) ?? 0
-                    let slot = unitID * 4 + trayID
-                    let isActive = active == slot
-                    if let tray = AMSTray(json: t, slot: slot, isActive: isActive, isExternal: false) {
-                        trays.append(tray)
-                    }
-                }
-            }
-            if !trays.isEmpty || !units.isEmpty { amsTrays = trays }
-            activeTray = active
-        }
-
-        if let vt = p["vt_tray"] as? [String: Any] {
-            let active = activeTray == 254
-            externalTray = AMSTray(json: vt, slot: 254, isActive: active, isExternal: true)
-        }
-
-        if let ipcam = p["ipcam"] as? [String: Any] {
-            cameraAvailable = (ipcam["ipcam_dev"] as? String) == "1"
-        }
-
-        if let net = p["net"] as? [String: Any],
-           let infos = net["info"] as? [[String: Any]],
-           let info = infos.first {
-            if let raw = Parse.intValue(info["ip"]) {
-                ipAddress = Self.ipString(raw)
-            }
-        } else if let ip = p["ip"] as? String, !ip.isEmpty {
-            ipAddress = ip
+        if let v = Parse.intValue(p["gcode_file_prepare_percent"]) { preparePercent = v }
+        if let v = Parse.intValue(p["mc_print_stage"]) { mcPrintStage = v }
+        if let upload = p["upload"] as? [String: Any] {
+            if let st = upload["status"] as? String { uploadStatus = st }
         }
 
         if let hmsList = p["hms"] as? [[String: Any]] {

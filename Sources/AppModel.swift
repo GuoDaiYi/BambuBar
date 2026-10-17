@@ -37,9 +37,6 @@ final class AppModel: ObservableObject {
         }
     }
     @Published var launchAtLogin: Bool = false
-    @Published var manualIPs: [String: String] = [:] {
-        didSet { if !isDemo { persistManualIPs() } }
-    }
     @Published var loginRegion: CloudRegion {
         didSet { if !isDemo { UserDefaults.standard.set(loginRegion.rawValue, forKey: Keys.region) } }
     }
@@ -66,7 +63,6 @@ final class AppModel: ObservableObject {
         static let notifications = "notificationsEnabled"
         static let region = "loginRegion"
         static let account = "loginAccount"
-        static let manualIPs = "manualIPs"
         static let language = "appLanguage"
     }
 
@@ -80,10 +76,6 @@ final class AppModel: ObservableObject {
         let regionRaw = UserDefaults.standard.string(forKey: Keys.region) ?? CloudRegion.china.rawValue
         loginRegion = CloudRegion(rawValue: regionRaw) ?? .china
         pendingAccount = UserDefaults.standard.string(forKey: Keys.account) ?? ""
-        if let data = UserDefaults.standard.data(forKey: Keys.manualIPs),
-           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
-            manualIPs = decoded
-        }
         launchAtLogin = SMAppService.mainApp.status == .enabled
         guard startNetwork else {
             authStep = .login
@@ -131,20 +123,9 @@ final class AppModel: ObservableObject {
         s.jobName = Lang.t("Cyber Dragon · 分件套", "Cyber Dragon · Kit")
         s.gcodeFile = "cyber_dragon_plate_2.gcode.3mf"
         s.wifiSignal = -48
-        s.cameraAvailable = true
-        s.ipAddress = "192.168.31.88"
-        s.amsHumidity = 32
-        s.amsTemp = 27.6
-        s.activeTray = 0
         s.printError = 0
         s.stage = 0
         s.lastUpdate = Date()
-        s.amsTrays = [
-            AMSTray(id: 0, slot: 0, type: "PLA", colorHex: "22C55EFF", remain: 78, brand: "Bambu", isActive: true),
-            AMSTray(id: 1, slot: 1, type: "PLA", colorHex: "F59E0BFF", remain: 54, brand: "Bambu"),
-            AMSTray(id: 2, slot: 2, type: "PETG", colorHex: "38BDF8FF", remain: 31, brand: "Bambu"),
-            AMSTray(id: 3, slot: 3, type: "PLA", colorHex: "F8FAFCFF", remain: 12, brand: "Bambu")
-        ]
 
         var idle = PrinterStatus()
         idle.state = .idle
@@ -175,7 +156,6 @@ final class AppModel: ObservableObject {
         app.launchAtLogin = false
         app.serviceObservers = [:]
         app.selectedID = mainDevice.serial
-        app.manualIPs = [mainDevice.serial: "192.168.31.88"]
         app.cloudConnected = true
         app.authStep = .ready
         app.isWorking = false
@@ -216,12 +196,6 @@ final class AppModel: ObservableObject {
         case .offline: return Lang.t("离线", "Offline")
         case .unknown: return Lang.t("等待", "Wait")
         }
-    }
-
-    /// The camera is opt-in: only a manually configured LAN IP enables the UI.
-    func cameraHost(for service: PrinterService) -> String? {
-        let manual = (manualIPs[service.device.serial] ?? "").trimmingCharacters(in: .whitespaces)
-        return manual.isEmpty ? nil : manual
     }
 
     // MARK: - Bootstrap / auth
@@ -438,19 +412,6 @@ final class AppModel: ObservableObject {
     }
 
     // MARK: - Settings
-
-    func setManualIP(_ ip: String, for serial: String) {
-        var copy = manualIPs
-        let trimmed = ip.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { copy.removeValue(forKey: serial) } else { copy[serial] = trimmed }
-        manualIPs = copy
-    }
-
-    private func persistManualIPs() {
-        if let data = try? JSONEncoder().encode(manualIPs) {
-            UserDefaults.standard.set(data, forKey: Keys.manualIPs)
-        }
-    }
 
     func updateLaunchAtLogin(_ enabled: Bool) {
         do {

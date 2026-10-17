@@ -62,12 +62,12 @@ struct LoginView: View {
     var body: some View {
         HStack(spacing: 0) {
             brandingPanel
-                .frame(width: 258)
+                .frame(width: 238)
             Divider().overlay(Color.white.opacity(0.07))
             formPanel
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 640, height: 430)
+        .frame(width: 600, height: 400)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
         .onAppear {
@@ -94,8 +94,8 @@ struct LoginView: View {
                                             "Live cloud status with progress and temperatures"))
                 feature("slider.horizontal.3", Lang.t("暂停 / 继续、四档调速、取消任务",
                                                      "Pause, resume, four speed modes and cancel"))
-                feature("camera.fill", Lang.t("AMS 耗材与局域网摄像头画面",
-                                             "AMS filament details and a LAN camera"))
+                feature("bell.badge.fill", Lang.t("打印完成与异常通知",
+                                                  "Print finished and error notifications"))
                 feature("globe", Lang.t("中文 / English 随时切换",
                                         "Switch between English and Chinese"))
             }

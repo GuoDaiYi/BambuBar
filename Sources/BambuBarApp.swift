@@ -26,8 +26,10 @@ struct MenuBarLabel: View {
         guard app.authStep == .ready, let service, let _ = app.session else { return nil }
         if !online || state == .offline { return Lang.t("离线", "Offline") }
         switch state {
-        case .running, .prepare:
+        case .running:
             return "\(service.status.progress)%"
+        case .prepare:
+            return service.status.phaseShortText.isEmpty ? "\(service.status.progress)%" : service.status.phaseShortText
         case .paused:
             return Lang.t("暂停", "Pause")
         case .finished:
@@ -67,7 +69,7 @@ struct BambuBarApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
-        .defaultSize(width: 720, height: 480)
+        .defaultSize(width: 680, height: 450)
     }
 }
 

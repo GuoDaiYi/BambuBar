@@ -210,8 +210,8 @@ struct SpeedSelector: View {
                         Text(item.1)
                             .font(.system(size: 9, weight: .medium, design: .rounded))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
                     .foregroundStyle(selected ? Theme.green : Theme.textSecondary)
                     .background(
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -286,58 +286,6 @@ struct TempTile: View {
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
-    }
-}
-
-// MARK: - Spool
-
-struct SpoolView: View {
-    let tray: AMSTray
-
-    private var color: Color {
-        Color(hex: tray.colorHex) ?? Color(white: 0.6)
-    }
-
-    var body: some View {
-        VStack(spacing: 6) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [color.opacity(0.95), color.opacity(0.58)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 34, height: 34)
-                    .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
-                Circle()
-                    .fill(Theme.backgroundTop.opacity(0.92))
-                    .frame(width: 12, height: 12)
-                    .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.8))
-                if tray.isActive {
-                    Circle()
-                        .stroke(Theme.green, lineWidth: 2)
-                        .frame(width: 41, height: 41)
-                        .shadow(color: Theme.green.opacity(0.5), radius: 4)
-                }
-            }
-            .frame(width: 42, height: 42)
-
-            Text(tray.displayType)
-                .font(.system(size: 9.5, weight: .semibold, design: .rounded))
-                .foregroundStyle(tray.isEmpty ? Theme.textTertiary : Theme.textPrimary)
-                .lineLimit(1)
-            Text(tray.remainText)
-                .font(.system(size: 9, weight: .medium, design: .rounded))
-                .foregroundStyle(tray.isActive ? Theme.green : Theme.textTertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(tray.isActive ? Theme.green.opacity(0.07) : Color.clear)
-        )
     }
 }
 

@@ -24,16 +24,16 @@ struct SnapshotMain {
                 let model = AppModel.demo(language: language)
                 if let service = model.selectedService {
                     let dashboard = DashboardView(service: service).environmentObject(model)
-                    enqueue(dashboard, size: CGSize(width: 784, height: 500),
+                    enqueue(dashboard, size: CGSize(width: 620, height: 470),
                             path: dir.appendingPathComponent("dashboard.png").path)
                 }
 
                 let loginModel = AppModel.demo(language: language)
                 loginModel.authStep = .login
-                enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 640, height: 430),
+                enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 600, height: 400),
                         path: dir.appendingPathComponent("login.png").path)
 
-                enqueue(SettingsView().environmentObject(model), size: CGSize(width: 720, height: 480),
+                enqueue(SettingsView().environmentObject(model), size: CGSize(width: 680, height: 450),
                         path: dir.appendingPathComponent("settings.png").path)
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
