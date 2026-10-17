@@ -25,7 +25,7 @@ final class MQTTClient {
     private var connection: NWConnection?
     private var buffer: [UInt8] = []
     private var subscriptions = Set<String>()
-    private var pendingPublishes: [(String, Data)] = []
+    private var pendingPublishes: [(String, Data, UInt8)] = []
     private var shouldRun = false
     private var ready = false
     private var packetID: UInt16 = 1
@@ -68,12 +68,12 @@ final class MQTTClient {
         }
     }
 
-    func publish(topic: String, payload: Data) {
+    func publish(topic: String, payload: Data, qos: UInt8 = 0) {
         queue.async {
             if self.ready {
-                self.sendPublish(topic: topic, payload: payload)
+                self.sendPublish(topic: topic, payload: payload, qos: qos)
             } else {
-                self.pendingPublishes.append((topic, payload))
+                self.pendingPublishes.append((topic, payload, qos))
                 if self.pendingPublishes.count > 30 { self.pendingPublishes.removeFirst() }
             }
         }
@@ -122,7 +122,7 @@ final class MQTTClient {
             case .waiting(let error):
                 Log.write("MQTT waiting: \(error.localizedDescription)")
             case .failed(let error):
-                self.handleDrop("连接失败：\(error.localizedDescription)")
+                self.handleDrop(Lang.t("连接失败：\(error.localizedDescription)", "Connection failed: \(error.localizedDescription)"))
             case .cancelled:
                 if self.shouldRun { self.scheduleReconnect() }
             default:
@@ -170,7 +170,7 @@ final class MQTTClient {
         timer.setEventHandler { [weak self] in
             guard let self, self.ready else { return }
             if Date().timeIntervalSince(self.lastInbound) > 120 {
-                self.handleDrop("心跳超时")
+                self.handleDrop(Lang.t("心跳超时", "Keepalive timeout"))
                 return
             }
             self.send([0xC0, 0x00])
@@ -191,7 +191,7 @@ final class MQTTClient {
         connection.send(content: Data(bytes), completion: .contentProcessed { [weak self] error in
             if let error {
                 Log.write("MQTT send error: \(error.localizedDescription)")
-                self?.handleDrop("发送失败")
+                self?.handleDrop(Lang.t("发送失败", "Send failed"))
             }
         })
     }
@@ -235,11 +235,17 @@ final class MQTTClient {
         send(packet)
     }
 
-    private func sendPublish(topic: String, payload: Data) {
+    private func sendPublish(topic: String, payload: Data, qos: UInt8) {
         var body: [UInt8] = []
         body.append(contentsOf: Self.mqttString(topic))
+        if qos > 0 {
+            let pid = nextPacketID()
+            body.append(UInt8(pid >> 8))
+            body.append(UInt8(pid & 0xFF))
+        }
         body.append(contentsOf: [UInt8](payload))
-        var packet: [UInt8] = [0x30]
+        let header: UInt8 = 0x30 | ((qos & 0x03) << 1)
+        var packet: [UInt8] = [header]
         packet.append(contentsOf: Self.remainingLength(body.count))
         packet.append(contentsOf: body)
         send(packet)
@@ -276,11 +282,11 @@ final class MQTTClient {
                 self.processBuffer()
             }
             if let error {
-                self.handleDrop("接收失败：\(error.localizedDescription)")
+                self.handleDrop(Lang.t("接收失败：\(error.localizedDescription)", "Receive failed: \(error.localizedDescription)"))
                 return
             }
             if isComplete {
-                self.handleDrop("连接被关闭")
+                self.handleDrop(Lang.t("连接被关闭", "Connection closed"))
                 return
             }
             if self.shouldRun {
@@ -336,8 +342,8 @@ final class MQTTClient {
             if !subscriptions.isEmpty {
                 sendSubscribe(Array(subscriptions))
             }
-            for (topic, payload) in pendingPublishes {
-                sendPublish(topic: topic, payload: payload)
+            for (topic, payload, qos) in pendingPublishes {
+                sendPublish(topic: topic, payload: payload, qos: qos)
             }
             pendingPublishes.removeAll()
             startPing()
@@ -350,7 +356,7 @@ final class MQTTClient {
                 let cb = onAuthFailure
                 DispatchQueue.main.async { cb?() }
             }
-            handleDrop("MQTT 拒绝连接（\(code)）")
+            handleDrop(Lang.t("MQTT 拒绝连接（\(code)）", "MQTT connection refused (\(code))"))
         }
     }
 

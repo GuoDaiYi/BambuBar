@@ -1,7 +1,7 @@
 # BambuBar
 
 <p align="center">
-  <img src="docs/dashboard.png" width="360" alt="BambuBar dashboard showing a live print on an A1">
+  <img src="docs/en/dashboard.png" width="360" alt="BambuBar dashboard showing a live print on an A1">
 </p>
 
 <p align="center">
@@ -10,37 +10,50 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml"><img alt="Build" src="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml/badge.svg"></a>
+  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-brightgreen"></a>
   <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple">
+  <img alt="Universal binary" src="https://img.shields.io/badge/binary-universal-blue">
   <img alt="Swift 5.8" src="https://img.shields.io/badge/Swift-5.8-orange?logo=swift">
-  <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-blue">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
 BambuBar lives in the macOS menu bar and connects directly to your Bambu Lab cloud account. It shows the current print in a compact progress ring, lets you switch between multiple printers, and exposes the controls you actually need during a print — without opening a slicer or a browser.
 
-The interface is currently in Simplified Chinese. The codebase, build scripts and documentation are in English.
+Available in **English** and **简体中文** — switch languages from the globe menu on the sign-in screen or in Settings. The choice is remembered across launches.
+
+[English](README.md) · [简体中文](README.zh-CN.md)
 
 ---
 
 ## Features
 
 - **Menu bar at a glance** — a custom progress ring plus percentage, pause/finish/error states, and printer online status.
-- **Multiple printers** — both printers stay connected in the background; switch the menu bar target from the header.
+- **Multiple printers** — every printer stays connected in the background; switch the menu bar target from the header.
 - **Real-time job status** — state, progress, current/total layers, remaining time, ETA, speed mode, Wi-Fi signal and error state.
 - **Print controls** — pause, resume and cancel (with a confirmation dialog) from the popover.
 - **Four speed modes** — Silent, Standard, Sport and Ludicrous, mapped to Bambu's `spd_lvl` values.
 - **Temperature and fan control** — view nozzle, bed and fan values; adjust nozzle/bed targets and part-cooling fan with G-code commands.
 - **AMS / AMS lite details** — spool color, material type, remaining percentage, active slot, humidity and temperature.
-- **Local camera** — live JPEG stream from A1/P1-class printers over the LAN (TLS port 6000), with a 16:9 preview and a larger window.
+- **Local camera (opt-in)** — live JPEG stream from A1/P1-class printers over the LAN (TLS port 6000). The camera UI stays hidden until you enter a LAN IP in Settings.
+- **Bilingual UI** — English and Simplified Chinese, switchable at runtime.
 - **Native notifications** — print completion and failure notifications with sound.
 - **Launch at login** — optional `SMAppService` login item.
 - **No Dock icon, no third-party server** — a lightweight `LSUIElement` app built with SwiftUI and AppKit.
 
 ## Screenshots
 
+### English
+
 | Dashboard | Sign in | Settings |
 | :---: | :---: | :---: |
-| <img src="docs/dashboard.png" width="260"> | <img src="docs/login.png" width="260"> | <img src="docs/settings.png" width="300"> |
+| <img src="docs/en/dashboard.png" width="250"> | <img src="docs/en/login.png" width="250"> | <img src="docs/en/settings.png" width="290"> |
+
+### 简体中文
+
+| 主面板 | 登录 | 设置 |
+| :---: | :---: | :---: |
+| <img src="docs/zh/dashboard.png" width="250"> | <img src="docs/zh/login.png" width="250"> | <img src="docs/zh/settings.png" width="290"> |
 
 ## Requirements
 
@@ -50,6 +63,16 @@ The interface is currently in Simplified Chinese. The codebase, build scripts an
 - For the local camera: the Mac and printer must be on the same LAN, and **LAN Liveview** must be enabled on the printer
 
 ## Installation
+
+### Download the app
+
+Download **BambuBar-1.0.0-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
+
+The app is ad-hoc signed but not notarized. If macOS refuses to launch it, right-click the app and choose **Open**, or run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/BambuBar.app
+```
 
 ### Build from source
 
@@ -77,9 +100,9 @@ xattr -dr com.apple.quarantine /Applications/BambuBar.app
 
 1. Click the printer icon in the menu bar.
 2. Pick **China** or **Global**, enter your Bambu Lab account and password.
-3. If Bambu sends an email verification code, enter the 6-digit code.
-4. Your bound printers appear automatically. Use **切换** (Switch) in the header to choose the printer shown in the menu bar.
-5. Open **设置** (Settings) to configure the LAN IP used by the camera, notifications, and launch at login.
+3. Bambu may send a verification code by **email or SMS**; enter the 6-digit code.
+4. Your bound printers appear automatically. Use **Switch** in the header to choose the printer shown in the menu bar.
+5. Open **Settings** to choose the language, configure the LAN IP used by the camera, notifications, and launch at login.
 
 The password is never stored. The cloud access token is kept in the macOS Keychain (with a `0600` file fallback) and is only sent to Bambu Lab's own cloud endpoints.
 
@@ -114,7 +137,7 @@ SwiftUI MenuBarExtra
               └── TLS 6000 → 80-byte auth packet → JPEG frames
 ```
 
-- MQTT is implemented from scratch on top of `Network.framework` (CONNECT / SUBSCRIBE / PUBLISH / PING, QoS 0, automatic reconnect). No external dependencies.
+- MQTT is implemented from scratch on top of `Network.framework` (CONNECT / SUBSCRIBE / PUBLISH / PING, QoS 1 for commands, automatic reconnect). No external dependencies.
 - Cloud MQTT is authenticated with `u_{uid}` + the Bambu access token.
 - Camera authentication uses the printer's 8-character LAN access code; the TLS certificate is accepted as-is because Bambu printers use a self-signed certificate.
 
@@ -135,10 +158,12 @@ Sources/
   SettingsView.swift       Account, IP, notification settings
   Components.swift         Reusable UI components
   Theme.swift              Colors, typography helpers
+  Localization.swift       English / Simplified Chinese runtime strings
 Tools/
   makeicon.sh / makeicon.swift   App icon generator
   snapshot.sh / SnapshotMain.swift   Offscreen UI screenshots
-build.sh                   Compiles and bundles BambuBar.app
+build.sh                   Compiles a universal BambuBar.app
+release.sh                 Builds the DMG and ZIP release assets
 ```
 
 ## Privacy
@@ -153,19 +178,19 @@ build.sh                   Compiles and bundles BambuBar.app
 
 - Cloud camera streaming uses Bambu's proprietary TUTK/Agora tunnel and is **not implemented**. The camera only works when the Mac and printer are on the same LAN.
 - A1 mini has no built-in camera.
-- The UI is currently Simplified Chinese only.
+- The menu bar popover is intentionally a tall portrait rectangle; the camera section is hidden until a LAN IP is entered.
+- The app uses QoS 1 and reconnect backoff, but Bambu's cloud can still rate-limit when Bambu Handy and BambuBar send commands at the same moment.
 - Older X1/P1 firmware may require the printer to be in LAN mode for local camera access; the cloud connection itself does not.
 - The app is not notarized. Build it locally or allow it in **System Settings → Privacy & Security** if you download a prebuilt app.
 - Only the first four AMS slots are shown.
 
 ## Roadmap
 
-- English UI / localization
 - LAN MQTT fallback when the cloud is unreachable
 - Automatic printer IP discovery (SSDP/Bonjour)
 - X1 RTSPS camera support
 - Print history and filament usage statistics
-- Homebrew cask / signed release
+- Notarized release and Homebrew cask
 
 ## Contributing
 

@@ -14,19 +14,28 @@ struct SnapshotMain {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             Task { @MainActor in
-                let model = AppModel.demo()
-                if let service = model.selectedService {
-                    let dashboard = DashboardView(service: service).environmentObject(model)
-                    enqueue(dashboard, size: CGSize(width: 380, height: 624), path: "/tmp/bambubar-dashboard.png")
+                for language in AppLanguage.allCases {
+                    let folder = language == .zhHans ? "zh" : "en"
+                    let dir = URL(fileURLWithPath: "/tmp/bambubar-shots/\(folder)", isDirectory: true)
+                    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+                    let model = AppModel.demo(language: language)
+                    if let service = model.selectedService {
+                        let dashboard = DashboardView(service: service).environmentObject(model)
+                        enqueue(dashboard, size: CGSize(width: 376, height: 700),
+                                path: dir.appendingPathComponent("dashboard.png").path)
+                    }
+
+                    let loginModel = AppModel.demo(language: language)
+                    loginModel.authStep = .login
+                    enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 376, height: 560),
+                            path: dir.appendingPathComponent("login.png").path)
+
+                    enqueue(SettingsView().environmentObject(model), size: CGSize(width: 440, height: 700),
+                            path: dir.appendingPathComponent("settings.png").path)
                 }
 
-                let loginModel = AppModel.demo()
-                loginModel.authStep = .login
-                enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 380, height: 486), path: "/tmp/bambubar-login.png")
-
-                enqueue(SettingsView().environmentObject(model), size: CGSize(width: 460, height: 610), path: "/tmp/bambubar-settings.png")
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
                     captureAll()
                     exit(0)
                 }

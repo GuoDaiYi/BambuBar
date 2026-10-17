@@ -21,11 +21,11 @@ struct TemperatureSheet: View {
                 Image(systemName: "thermometer.medium")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Theme.orange)
-                Text("温度与风扇")
+                Text(Lang.t("温度与风扇", "Temperature & fans"))
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
-                Button("关闭") { dismiss() }
+                Button(Lang.t("关闭", "Close")) { dismiss() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
@@ -37,7 +37,7 @@ struct TemperatureSheet: View {
             VStack(spacing: 14) {
                 controlRow(
                     icon: "flame.fill",
-                    title: "喷嘴温度",
+                    title: Lang.t("喷嘴温度", "Nozzle temperature"),
                     current: service.status.nozzleTemp,
                     tint: Theme.orange,
                     value: $nozzleTarget,
@@ -46,7 +46,7 @@ struct TemperatureSheet: View {
                 )
                 controlRow(
                     icon: "rectangle.compress.vertical",
-                    title: "热床温度",
+                    title: Lang.t("热床温度", "Bed temperature"),
                     current: service.status.bedTemp,
                     tint: Theme.red,
                     value: $bedTarget,
@@ -55,7 +55,7 @@ struct TemperatureSheet: View {
                 )
                 controlRow(
                     icon: "wind",
-                    title: "模型风扇",
+                    title: Lang.t("模型风扇", "Part cooling fan"),
                     current: Double(service.status.coolingFan),
                     tint: Theme.cyan,
                     value: $fanPercent,
@@ -65,7 +65,8 @@ struct TemperatureSheet: View {
             }
             .padding(.horizontal, 18)
 
-            Text("打印过程中修改会立即生效，请谨慎调整。")
+            Text(Lang.t("打印过程中修改会立即生效，请谨慎调整。",
+                        "Changes apply immediately during a print. Adjust with care."))
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -78,7 +79,7 @@ struct TemperatureSheet: View {
                 service.setPartFan(Int(fanPercent.rounded()))
                 dismiss()
             } label: {
-                Text("应用设置")
+                Text(Lang.t("应用设置", "Apply"))
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(Color(red: 0.02, green: 0.10, blue: 0.06))
                     .frame(maxWidth: .infinity)
@@ -108,7 +109,7 @@ struct TemperatureSheet: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
-                Text("当前 \(Int(current.rounded()))\(suffix)")
+                Text(Lang.t("当前 \(Int(current.rounded()))\(suffix)", "Now \(Int(current.rounded()))\(suffix)"))
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
                 Text("\(Int(value.wrappedValue.rounded()))\(suffix)")

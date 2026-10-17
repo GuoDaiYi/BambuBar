@@ -11,7 +11,7 @@ struct SettingsView: View {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Theme.green)
-                Text("设置")
+                Text(Lang.t("设置", "Settings"))
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
@@ -33,6 +33,7 @@ struct SettingsView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
                     accountCard
+                    languageSection
                     printerSection
                     generalSection
                     aboutSection
@@ -41,7 +42,7 @@ struct SettingsView: View {
                 .padding(.bottom, 18)
             }
         }
-        .frame(width: 460, height: 610)
+        .frame(width: 440, height: 700)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
         .onAppear {
@@ -53,11 +54,11 @@ struct SettingsView: View {
 
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "拓竹账号", icon: "person.crop.circle")
+            SectionHeader(title: Lang.t("拓竹账号", "Bambu Lab account"), icon: "person.crop.circle")
             HStack(spacing: 10) {
                 LogoMark(size: 34)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(app.session?.account ?? "未登录")
+                    Text(app.session?.account ?? Lang.t("未登录", "Not signed in"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
@@ -67,7 +68,7 @@ struct SettingsView: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                Button("退出登录") { app.logout() }
+                Button(Lang.t("退出登录", "Sign out")) { app.logout() }
                     .buttonStyle(.plain)
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.red)
@@ -79,16 +80,57 @@ struct SettingsView: View {
         .card(padding: 12, radius: 14)
     }
 
+    // MARK: Language
+
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(title: Lang.t("语言", "Language"), icon: "globe")
+            HStack(spacing: 2) {
+                ForEach(AppLanguage.allCases) { language in
+                    let selected = app.language == language
+                    Button {
+                        app.setLanguage(language)
+                    } label: {
+                        Text(language.title)
+                            .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                            .foregroundStyle(selected ? Theme.green : Theme.textTertiary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 30)
+                            .background(
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .fill(selected ? Theme.green.opacity(0.15) : Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(3)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.black.opacity(0.20))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                    )
+            )
+        }
+        .card(padding: 12, radius: 14)
+    }
+
+    private var appVersion: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0.0"
+    }
+
     // MARK: Printers
 
     private var printerSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                SectionHeader(title: "打印机", icon: "printer.fill")
+                SectionHeader(title: Lang.t("打印机", "Printers"), icon: "printer.fill")
                 Button {
                     app.refreshDevices()
                 } label: {
-                    Label("刷新", systemImage: "arrow.clockwise")
+                    Label(Lang.t("刷新", "Refresh"), systemImage: "arrow.clockwise")
                         .font(.system(size: 9.5, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -96,7 +138,7 @@ struct SettingsView: View {
             }
 
             if app.devices.isEmpty {
-                Text("暂未读取到设备")
+                Text(Lang.t("暂未读取到设备", "No devices loaded"))
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
                     .padding(.vertical, 6)
@@ -123,7 +165,7 @@ struct SettingsView: View {
                     .foregroundStyle(Theme.textTertiary)
                 Spacer()
                 if app.selectedID == device.serial {
-                    Text("菜单栏")
+                    Text(Lang.t("菜单栏", "Menu bar"))
                         .font(.system(size: 8.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.green)
                         .padding(.horizontal, 6)
@@ -133,7 +175,7 @@ struct SettingsView: View {
                 Button {
                     app.selectedID = device.serial
                 } label: {
-                    Text("显示")
+                    Text(Lang.t("显示", "Show"))
                         .font(.system(size: 9, weight: .semibold, design: .rounded))
                         .foregroundStyle(app.selectedID == device.serial ? Theme.textTertiary : Theme.cyan)
                 }
@@ -147,7 +189,7 @@ struct SettingsView: View {
                     .foregroundStyle(Theme.textTertiary)
                 Text("·")
                     .foregroundStyle(Theme.textTertiary)
-                Text("访问码 \(masked(device.accessCode))")
+                Text(Lang.t("访问码 \(masked(device.accessCode))", "Access code \(masked(device.accessCode))"))
                     .font(.system(size: 8.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.textTertiary)
             }
@@ -156,7 +198,7 @@ struct SettingsView: View {
                 Image(systemName: "network")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(Theme.textTertiary)
-                TextField("局域网 IP（摄像头用）", text: Binding(
+                TextField(Lang.t("局域网 IP（摄像头用）", "LAN IP (camera)"), text: Binding(
                     get: { app.manualIPs[device.serial] ?? "" },
                     set: { app.setManualIP($0, for: device.serial) }
                 ))
@@ -177,7 +219,7 @@ struct SettingsView: View {
                     Button {
                         app.setManualIP(ip, for: device.serial)
                     } label: {
-                        Text("使用 \(ip)")
+                        Text(Lang.t("使用 \(ip)", "Use \(ip)"))
                             .font(.system(size: 8.5, weight: .medium, design: .rounded))
                             .foregroundStyle(Theme.cyan)
                     }
@@ -200,19 +242,19 @@ struct SettingsView: View {
 
     private var generalSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "通用", icon: "slider.horizontal.3")
+            SectionHeader(title: Lang.t("通用", "General"), icon: "slider.horizontal.3")
             VStack(spacing: 0) {
                 toggleRow(
                     icon: "bell.badge.fill",
-                    title: "打印完成 / 异常通知",
-                    subtitle: "任务结束时发送 macOS 通知",
+                    title: Lang.t("打印完成 / 异常通知", "Print finished / error notifications"),
+                    subtitle: Lang.t("任务结束时发送 macOS 通知", "Send a macOS notification when a job ends"),
                     isOn: $app.notificationsEnabled
                 )
                 Divider().overlay(Color.white.opacity(0.05)).padding(.leading, 30)
                 toggleRow(
                     icon: "power",
-                    title: "开机自动启动",
-                    subtitle: "登录 macOS 后在菜单栏运行",
+                    title: Lang.t("开机自动启动", "Launch at login"),
+                    subtitle: Lang.t("登录 macOS 后在菜单栏运行", "Start in the menu bar after you sign in"),
                     isOn: Binding(
                         get: { app.launchAtLogin },
                         set: { app.updateLaunchAtLogin($0) }
@@ -258,29 +300,30 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 9) {
-            SectionHeader(title: "关于", icon: "info.circle")
+            SectionHeader(title: Lang.t("关于", "About"), icon: "info.circle")
             HStack(spacing: 8) {
-                Text("BambuBar 1.0")
+                Text("BambuBar \(appVersion)")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textSecondary)
                 Text("·")
                     .foregroundStyle(Theme.textTertiary)
-                Text("云端状态 1 秒刷新")
+                Text(Lang.t("云端状态 1 秒刷新", "Live cloud status, ~1s refresh"))
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
                 Spacer()
-                Button("打开日志") {
+                Button(Lang.t("打开日志", "Open log")) {
                     NSWorkspace.shared.selectFile(Log.path, inFileViewerRootedAtPath: "")
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
-                Button("退出 App") { app.quit() }
+                Button(Lang.t("退出 App", "Quit")) { app.quit() }
                     .buttonStyle(.plain)
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.red)
             }
-            Text("摄像头通过打印机局域网 6000 端口直连；远程网络下云端画面使用私有协议，暂不支持。")
+            Text(Lang.t("摄像头通过打印机局域网 6000 端口直连；填写 IP 后才会显示摄像头。远程网络下云端画面使用私有协议，暂不支持。",
+                        "The camera connects directly to the printer on port 6000 and only appears after you enter a LAN IP. Cloud camera streaming uses a proprietary protocol and is not supported."))
                 .font(.system(size: 9, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)

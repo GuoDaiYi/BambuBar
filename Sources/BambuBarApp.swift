@@ -24,16 +24,16 @@ struct MenuBarLabel: View {
 
     private func labelText(service: PrinterService?, state: PrintState, online: Bool) -> String? {
         guard app.authStep == .ready, let service, let _ = app.session else { return nil }
-        if !online || state == .offline { return "离线" }
+        if !online || state == .offline { return Lang.t("离线", "Offline") }
         switch state {
         case .running, .prepare:
             return "\(service.status.progress)%"
         case .paused:
-            return "暂停"
+            return Lang.t("暂停", "Pause")
         case .finished:
-            return "完成"
+            return Lang.t("完成", "Done")
         case .failed:
-            return "异常"
+            return Lang.t("异常", "Error")
         case .idle, .unknown, .offline:
             return nil
         }
@@ -41,7 +41,7 @@ struct MenuBarLabel: View {
 
     private func accessibilityText(service: PrinterService?, state: PrintState, online: Bool) -> String {
         guard let service else { return "BambuBar" }
-        if !online { return "\(service.device.name) 离线" }
+        if !online { return Lang.t("\(service.device.name) 离线", "\(service.device.name) offline") }
         return "\(service.device.name) \(state.label) \(service.status.progress)%"
     }
 }
@@ -61,13 +61,13 @@ struct BambuBarApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("BambuBar 设置", id: "settings") {
+        Window("BambuBar", id: "settings") {
             SettingsView()
                 .environmentObject(app)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
-        .defaultSize(width: 460, height: 610)
+        .defaultSize(width: 440, height: 700)
     }
 }
 

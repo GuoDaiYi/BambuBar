@@ -10,8 +10,8 @@ enum CloudRegion: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .china: return "中国区"
-        case .global: return "国际区"
+        case .china: return Lang.t("中国区", "China")
+        case .global: return Lang.t("国际区", "Global")
         }
     }
 
@@ -72,7 +72,7 @@ struct CloudDevice: Identifiable, Codable, Hashable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         serial = try c.decodeIfPresent(String.self, forKey: .serial) ?? ""
-        name = try c.decodeIfPresent(String.self, forKey: .name) ?? "打印机"
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? Lang.t("打印机", "Printer")
         model = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
         accessCode = (try c.decodeIfPresent(String.self, forKey: .accessCode) ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -89,7 +89,7 @@ extension CloudDevice {
     /// Parses a device out of the raw /user/bind response.
     init?(json: [String: Any]) {
         guard let serial = json["dev_id"] as? String, serial.count > 4 else { return nil }
-        let name = (json["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "打印机"
+        let name = (json["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? Lang.t("打印机", "Printer")
         var model = (json["dev_product_name"] as? String)
             ?? (json["dev_model_name"] as? String)
             ?? ""
@@ -140,27 +140,27 @@ enum PrintState: String, Codable {
 
     var label: String {
         switch self {
-        case .idle: return "空闲"
-        case .prepare: return "准备中"
-        case .running: return "打印中"
-        case .paused: return "已暂停"
-        case .finished: return "已完成"
-        case .failed: return "失败"
-        case .offline: return "离线"
-        case .unknown: return "未知"
+        case .idle: return Lang.t("空闲", "Idle")
+        case .prepare: return Lang.t("准备中", "Preparing")
+        case .running: return Lang.t("打印中", "Printing")
+        case .paused: return Lang.t("已暂停", "Paused")
+        case .finished: return Lang.t("已完成", "Finished")
+        case .failed: return Lang.t("失败", "Failed")
+        case .offline: return Lang.t("离线", "Offline")
+        case .unknown: return Lang.t("未知", "Unknown")
         }
     }
 
     var shortLabel: String {
         switch self {
-        case .idle: return "待机"
-        case .prepare: return "准备"
-        case .running: return "打印"
-        case .paused: return "暂停"
-        case .finished: return "完成"
-        case .failed: return "异常"
-        case .offline: return "离线"
-        case .unknown: return "未知"
+        case .idle: return Lang.t("待机", "Idle")
+        case .prepare: return Lang.t("准备", "Prep")
+        case .running: return Lang.t("打印", "Print")
+        case .paused: return Lang.t("暂停", "Pause")
+        case .finished: return Lang.t("完成", "Done")
+        case .failed: return Lang.t("异常", "Error")
+        case .offline: return Lang.t("离线", "Offline")
+        case .unknown: return Lang.t("未知", "Unknown")
         }
     }
 
@@ -191,7 +191,7 @@ struct AMSTray: Identifiable, Hashable {
     var isActive: Bool
 
     var isEmpty: Bool { type.isEmpty }
-    var displayType: String { type.isEmpty ? "空" : type }
+    var displayType: String { type.isEmpty ? Lang.t("空", "Empty") : type }
 
     var remainText: String {
         guard let r = remain, r >= 0 else { return "—" }
@@ -290,15 +290,15 @@ struct PrinterStatus {
     var displayName: String {
         if !jobName.isEmpty { return jobName }
         if !gcodeFile.isEmpty { return gcodeFile }
-        return "没有正在打印的任务"
+        return Lang.t("没有正在打印的任务", "No active print job")
     }
 
     var remainingText: String {
         guard remainingMinutes > 0 else { return "—" }
         let h = remainingMinutes / 60
         let m = remainingMinutes % 60
-        if h > 0 { return "\(h) 小时 \(m) 分" }
-        return "\(m) 分钟"
+        if h > 0 { return Lang.t("\(h) 小时 \(m) 分", "\(h)h \(m)m") }
+        return Lang.t("\(m) 分钟", "\(m) min")
     }
 
     var etaText: String? {
@@ -315,37 +315,47 @@ struct PrinterStatus {
     }
 
     var stageText: String {
-        if state == .finished { return "打印完成" }
-        if state == .failed { return "打印异常" }
-        if state == .paused { return "已暂停" }
-        if state == .idle { return "准备就绪" }
-        if state == .prepare { return "正在准备" }
-        let codes: [Int: String] = [
-            0: "打印中", 1: "自动调平", 2: "热床预热", 3: "振动补偿", 4: "更换耗材",
-            5: "暂停", 6: "用户暂停", 7: "前门打开", 8: "耗材用尽", 9: "喷嘴升温",
-            10: "热床升温", 11: "校准中", 12: "扫描热床", 13: "空闲", 14: "挤出校准",
-            15: "冷却中", 16: "暂停", 17: "装填耗材", 18: "电机降噪", 19: "校准中",
-            20: "检测中", 21: "清洁喷嘴", 22: "调平热床", 23: "预热中", 24: "打印中",
-            25: "换料中", 26: "暂停中", 27: "扫描中", 28: "检查中"
+        if state == .finished { return Lang.t("打印完成", "Print finished") }
+        if state == .failed { return Lang.t("打印异常", "Print error") }
+        if state == .paused { return Lang.t("已暂停", "Paused") }
+        if state == .idle { return Lang.t("准备就绪", "Ready") }
+        if state == .prepare { return Lang.t("正在准备", "Preparing") }
+        let codes: [Int: (String, String)] = [
+            0: ("打印中", "Printing"), 1: ("自动调平", "Auto bed leveling"),
+            2: ("热床预热", "Bed heating"), 3: ("振动补偿", "Vibration compensation"),
+            4: ("更换耗材", "Filament change"), 5: ("暂停", "Paused"),
+            6: ("用户暂停", "Paused by user"), 7: ("前门打开", "Front door open"),
+            8: ("耗材用尽", "Filament runout"), 9: ("喷嘴升温", "Nozzle heating"),
+            10: ("热床升温", "Bed heating"), 11: ("校准中", "Calibrating"),
+            12: ("扫描热床", "Scanning bed"), 13: ("空闲", "Idle"),
+            14: ("挤出校准", "Extrusion calibration"), 15: ("冷却中", "Cooling"),
+            16: ("暂停", "Paused"), 17: ("装填耗材", "Loading filament"),
+            18: ("电机降噪", "Motor noise reduction"), 19: ("校准中", "Calibrating"),
+            20: ("检测中", "Inspecting"), 21: ("清洁喷嘴", "Cleaning nozzle"),
+            22: ("调平热床", "Bed leveling"), 23: ("预热中", "Preheating"),
+            24: ("打印中", "Printing"), 25: ("换料中", "Changing filament"),
+            26: ("暂停中", "Pausing"), 27: ("扫描中", "Scanning"),
+            28: ("检查中", "Checking")
         ]
-        return codes[stage] ?? (state == .unknown ? "等待数据" : state.label)
+        if let pair = codes[stage] { return Lang.t(pair.0, pair.1) }
+        return state == .unknown ? Lang.t("等待数据", "Waiting for data") : state.label
     }
 
     var speedLabel: String {
         switch speedLevel {
-        case 1: return "静音"
-        case 2: return "标准"
-        case 3: return "运动"
-        case 4: return "狂暴"
-        default: return "标准"
+        case 1: return Lang.t("静音", "Silent")
+        case 2: return Lang.t("标准", "Standard")
+        case 3: return Lang.t("运动", "Sport")
+        case 4: return Lang.t("狂暴", "Ludicrous")
+        default: return Lang.t("标准", "Standard")
         }
     }
 
     var etaLine: String {
         if !etaText.isEmptyOrNil {
-            return "预计 \(etaText ?? "") 完成"
+            return Lang.t("预计 \(etaText ?? "") 完成", "Est. finish \(etaText ?? "")")
         }
-        return state.isBusy ? "计算剩余时间…" : "等待任务"
+        return state.isBusy ? Lang.t("计算剩余时间…", "Calculating…") : Lang.t("等待任务", "No active job")
     }
 
     mutating func apply(report p: [String: Any], now: Date = Date()) {

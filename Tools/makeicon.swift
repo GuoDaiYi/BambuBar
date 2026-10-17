@@ -2,6 +2,7 @@ import AppKit
 
 let output = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "icon.png"
 let size = NSSize(width: 1024, height: 1024)
+
 let rep = NSBitmapImageRep(
     bitmapDataPlanes: nil,
     pixelsWide: 1024,
@@ -23,103 +24,76 @@ let ctx = graphics.cgContext
 ctx.setAllowsAntialiasing(true)
 ctx.setShouldAntialias(true)
 
-// Transparent margin, macOS style rounded tile.
+// macOS-style rounded tile, no circular frame.
 let tile = NSRect(x: 92, y: 92, width: 840, height: 840)
 let tilePath = NSBezierPath(roundedRect: tile, xRadius: 190, yRadius: 190)
 
 ctx.saveGState()
 tilePath.addClip()
 let bg = NSGradient(colors: [
-    NSColor(srgbRed: 0.055, green: 0.105, blue: 0.085, alpha: 1),
-    NSColor(srgbRed: 0.025, green: 0.045, blue: 0.055, alpha: 1)
+    NSColor(srgbRed: 0.045, green: 0.095, blue: 0.075, alpha: 1),
+    NSColor(srgbRed: 0.018, green: 0.035, blue: 0.040, alpha: 1)
 ])!
-bg.draw(in: tile, angle: -70)
+bg.draw(in: tile, angle: -75)
 
-// Soft green glow in the upper left.
+// Soft green light behind the printer.
 let glow = NSGradient(colors: [
-    NSColor(srgbRed: 0.18, green: 0.86, blue: 0.52, alpha: 0.34),
-    NSColor(srgbRed: 0.18, green: 0.86, blue: 0.52, alpha: 0.0)
+    NSColor(srgbRed: 0.20, green: 0.92, blue: 0.56, alpha: 0.36),
+    NSColor(srgbRed: 0.20, green: 0.92, blue: 0.56, alpha: 0.0)
 ])!
-glow.draw(fromCenter: NSPoint(x: 330, y: 720), radius: 0, toCenter: NSPoint(x: 330, y: 720), radius: 520, options: [])
+glow.draw(fromCenter: NSPoint(x: 512, y: 530), radius: 20,
+          toCenter: NSPoint(x: 512, y: 530), radius: 430, options: [])
 
-// Faint grid dots.
-NSColor.white.withAlphaComponent(0.055).setFill()
-for row in 0..<7 {
-    for col in 0..<7 {
-        let rect = NSRect(x: 210 + CGFloat(col) * 96, y: 200 + CGFloat(row) * 96, width: 4, height: 4)
+// Faint technical grid.
+NSColor.white.withAlphaComponent(0.045).setFill()
+for row in 0..<6 {
+    for col in 0..<6 {
+        let rect = NSRect(x: 240 + CGFloat(col) * 108, y: 215 + CGFloat(row) * 108, width: 4, height: 4)
         NSBezierPath(ovalIn: rect).fill()
     }
 }
 ctx.restoreGState()
 
-// Border
-NSColor.white.withAlphaComponent(0.10).setStroke()
+NSColor.white.withAlphaComponent(0.08).setStroke()
 tilePath.lineWidth = 5
 tilePath.stroke()
 
-// Progress ring
-let center = NSPoint(x: 512, y: 512)
-let radius: CGFloat = 265
-let track = NSBezierPath()
-track.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
-track.lineWidth = 46
-NSColor.white.withAlphaComponent(0.10).setStroke()
-track.stroke()
+// A green printer, large and centered.
+let green = NSColor(srgbRed: 0.17, green: 0.86, blue: 0.50, alpha: 1)
+let mint = NSColor(srgbRed: 0.33, green: 0.95, blue: 0.69, alpha: 1)
 
-let progress: CGFloat = 0.82
-let arc = NSBezierPath()
-arc.appendArc(withCenter: center, radius: radius, startAngle: -90, endAngle: -90 + 360 * progress, clockwise: false)
-arc.lineWidth = 46
-arc.lineCapStyle = .round
-let accent = NSColor(srgbRed: 0.20, green: 0.90, blue: 0.55, alpha: 1)
-accent.setStroke()
-let shadow = NSShadow()
-shadow.shadowColor = accent.withAlphaComponent(0.55)
-shadow.shadowBlurRadius = 34
-shadow.shadowOffset = .zero
-shadow.set()
-arc.stroke()
-NSShadow().set()
-
-// End cap dot
-let angle = (-90 + 360 * progress) * .pi / 180
-let dotCenter = NSPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius)
-let dot = NSBezierPath(ovalIn: NSRect(x: dotCenter.x - 15, y: dotCenter.y - 15, width: 30, height: 30))
-NSColor(srgbRed: 0.86, green: 1.0, blue: 0.92, alpha: 1).setFill()
-dot.fill()
-
-// Printer glyph
 if let symbol = NSImage(systemSymbolName: "printer.fill", accessibilityDescription: nil) {
-    let config = NSImage.SymbolConfiguration(pointSize: 300, weight: .semibold)
-        .applying(NSImage.SymbolConfiguration(paletteColors: [NSColor.white.withAlphaComponent(0.96)]))
+    let config = NSImage.SymbolConfiguration(pointSize: 360, weight: .semibold)
+        .applying(NSImage.SymbolConfiguration(paletteColors: [green]))
     if let glyph = symbol.withSymbolConfiguration(config) {
         let gs = glyph.size
-        let scale = min(400 / gs.width, 330 / gs.height)
+        let scale = min(500 / gs.width, 410 / gs.height)
         let w = gs.width * scale
         let h = gs.height * scale
-        let rect = NSRect(x: center.x - w / 2, y: center.y - h / 2 - 6, width: w, height: h)
-        let glyphShadow = NSShadow()
-        glyphShadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
-        glyphShadow.shadowBlurRadius = 20
-        glyphShadow.shadowOffset = NSSize(width: 0, height: -8)
-        glyphShadow.set()
+        let rect = NSRect(x: 512 - w / 2, y: 540 - h / 2, width: w, height: h)
+        let glowShadow = NSShadow()
+        glowShadow.shadowColor = green.withAlphaComponent(0.48)
+        glowShadow.shadowBlurRadius = 46
+        glowShadow.shadowOffset = .zero
+        glowShadow.set()
         glyph.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
         NSShadow().set()
     }
 }
 
-// Orange status dot
-let badge = NSBezierPath(ovalIn: NSRect(x: 700, y: 704, width: 88, height: 88))
-NSColor(srgbRed: 1.0, green: 0.64, blue: 0.24, alpha: 1).setFill()
-let badgeShadow = NSShadow()
-badgeShadow.shadowColor = NSColor(srgbRed: 1.0, green: 0.55, blue: 0.2, alpha: 0.55)
-badgeShadow.shadowBlurRadius = 26
-badgeShadow.shadowOffset = .zero
-badgeShadow.set()
-badge.fill()
-NSShadow().set()
-NSColor(srgbRed: 0.09, green: 0.08, blue: 0.05, alpha: 0.85).setFill()
-NSBezierPath(ovalIn: NSRect(x: 728, y: 732, width: 32, height: 32)).fill()
+// Three gentle layer lines, suggesting a print in progress.
+for i in 0..<3 {
+    let alpha: CGFloat = 0.34 - CGFloat(i) * 0.08
+    let width: CGFloat = 300 + CGFloat(i) * 62
+    let line = NSBezierPath()
+    line.move(to: NSPoint(x: 512 - width / 2, y: 270 - CGFloat(i) * 32))
+    line.line(to: NSPoint(x: 512 + width / 2, y: 270 - CGFloat(i) * 32))
+    line.lineWidth = 10
+    line.lineCapStyle = .round
+    let color = i == 0 ? mint : green
+    color.withAlphaComponent(alpha).setStroke()
+    line.stroke()
+}
 
 if let png = rep.representation(using: .png, properties: [:]) {
     try! png.write(to: URL(fileURLWithPath: output))

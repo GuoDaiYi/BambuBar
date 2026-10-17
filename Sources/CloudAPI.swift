@@ -9,11 +9,11 @@ enum CloudError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .badResponse: return "服务器返回了无法识别的数据"
-        case .unauthorized: return "登录已过期，请重新登录"
+        case .badResponse: return Lang.t("服务器返回了无法识别的数据", "The server returned an unrecognized response.")
+        case .unauthorized: return Lang.t("登录已过期，请重新登录", "Your session expired. Please sign in again.")
         case .server(let msg): return msg
-        case .missingUID: return "无法获取用户 ID，请重新登录"
-        case .decode(let msg): return "数据解析失败：\(msg)"
+        case .missingUID: return Lang.t("无法获取用户 ID，请重新登录", "Could not retrieve your user ID. Please sign in again.")
+        case .decode(let msg): return Lang.t("数据解析失败：\(msg)", "Could not parse the response: \(msg)")
         }
     }
 }
@@ -73,7 +73,7 @@ final class CloudAPI {
         if (json["loginType"] as? String) == "verifyCode" {
             return .needsCode
         }
-        let msg = (json["error"] as? String) ?? (json["message"] as? String) ?? "登录失败，请检查账号和密码"
+        let msg = (json["error"] as? String) ?? (json["message"] as? String) ?? Lang.t("登录失败，请检查账号和密码", "Sign-in failed. Check your account and password.")
         throw CloudError.server(msg)
     }
 
@@ -86,7 +86,7 @@ final class CloudAPI {
         let json = try await post(path: "/v1/user-service/user/login", region: region, body: body, token: nil)
         guard let token = json["accessToken"] as? String, !token.isEmpty else {
             let msg = (json["error"] as? String) ?? (json["message"] as? String)
-                ?? "验证码校验失败，请重新获取"
+                ?? Lang.t("验证码校验失败，请重新获取", "The verification code was rejected. Request a new one.")
             throw CloudError.server(msg)
         }
         let refresh = (json["refreshToken"] as? String) ?? token
@@ -186,7 +186,7 @@ final class CloudAPI {
         do {
             (data, response) = try await urlSession.data(for: request)
         } catch {
-            throw CloudError.server("网络请求失败：\(error.localizedDescription)")
+            throw CloudError.server(Lang.t("网络请求失败：\(error.localizedDescription)", "Network request failed: \(error.localizedDescription)"))
         }
         guard let http = response as? HTTPURLResponse else { throw CloudError.badResponse }
         let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
@@ -195,12 +195,12 @@ final class CloudAPI {
         }
         if http.statusCode >= 400 {
             let msg = (json["error"] as? String) ?? (json["message"] as? String)
-                ?? "服务器错误（HTTP \(http.statusCode)）"
+                ?? Lang.t("服务器错误（HTTP \(http.statusCode)）", "Server error (HTTP \(http.statusCode))")
             if msg.lowercased().contains("incorrect account or password") {
-                throw CloudError.server("账号或密码错误")
+                throw CloudError.server(Lang.t("账号或密码错误", "Incorrect account or password."))
             }
             if msg.lowercased().contains("verify code") {
-                throw CloudError.server("需要邮箱验证码")
+                throw CloudError.server(Lang.t("需要邮箱或短信验证码", "A verification code is required."))
             }
             throw CloudError.server(msg)
         }

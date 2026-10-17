@@ -20,7 +20,7 @@ final class AppModel: ObservableObject {
     @Published var services: [String: PrinterService] = [:]
     @Published var selectedID: String {
         didSet {
-            if !selectedID.isEmpty {
+            if !selectedID.isEmpty, !isDemo {
                 UserDefaults.standard.set(selectedID, forKey: Keys.selected)
             }
         }
@@ -31,16 +31,25 @@ final class AppModel: ObservableObject {
     @Published var cloudConnected = false
     @Published var notificationsEnabled: Bool {
         didSet {
+            guard !isDemo else { return }
             UserDefaults.standard.set(notificationsEnabled, forKey: Keys.notifications)
             if notificationsEnabled { NotificationManager.shared.request() }
         }
     }
     @Published var launchAtLogin: Bool = false
     @Published var manualIPs: [String: String] = [:] {
-        didSet { persistManualIPs() }
+        didSet { if !isDemo { persistManualIPs() } }
     }
     @Published var loginRegion: CloudRegion {
-        didSet { UserDefaults.standard.set(loginRegion.rawValue, forKey: Keys.region) }
+        didSet { if !isDemo { UserDefaults.standard.set(loginRegion.rawValue, forKey: Keys.region) } }
+    }
+    @Published var language: AppLanguage {
+        didSet {
+            Lang.current = language
+            if !isDemo {
+                UserDefaults.standard.set(language.rawValue, forKey: Keys.language)
+            }
+        }
     }
     @Published var lastRefresh: Date?
 
@@ -50,6 +59,7 @@ final class AppModel: ObservableObject {
     private var ticker: Timer?
     private var bootstrapped = false
     private var serviceObservers: [String: AnyCancellable] = [:]
+    private var isDemo = false
 
     private enum Keys {
         static let selected = "selectedPrinter"
@@ -57,10 +67,15 @@ final class AppModel: ObservableObject {
         static let region = "loginRegion"
         static let account = "loginAccount"
         static let manualIPs = "manualIPs"
+        static let language = "appLanguage"
     }
 
     init(startNetwork: Bool = true) {
         selectedID = UserDefaults.standard.string(forKey: Keys.selected) ?? ""
+        let savedLanguage = UserDefaults.standard.string(forKey: Keys.language)
+        let initialLanguage = AppLanguage(rawValue: savedLanguage ?? "") ?? AppLanguage.systemDefault()
+        language = initialLanguage
+        Lang.current = initialLanguage
         notificationsEnabled = UserDefaults.standard.object(forKey: Keys.notifications) as? Bool ?? true
         let regionRaw = UserDefaults.standard.string(forKey: Keys.region) ?? CloudRegion.china.rawValue
         loginRegion = CloudRegion(rawValue: regionRaw) ?? .china
@@ -80,11 +95,13 @@ final class AppModel: ObservableObject {
         Task { await bootstrap() }
     }
 
-    static func demo() -> AppModel {
+    static func demo(language: AppLanguage = .zhHans) -> AppModel {
         let app = AppModel(startNetwork: false)
+        app.isDemo = true
+        app.language = language
         let mainDevice = CloudDevice(
             serial: "01S00A000000001",
-            name: "A1 · 工作台",
+            name: Lang.t("A1 · 工作台", "A1 · Studio"),
             model: "A1",
             accessCode: "12345678",
             online: true
@@ -111,7 +128,7 @@ final class AppModel: ObservableObject {
         s.bedTarget = 60
         s.chamberTemp = 31.6
         s.coolingFan = 88
-        s.jobName = "Cyber Dragon · 分件套"
+        s.jobName = Lang.t("Cyber Dragon · 分件套", "Cyber Dragon · Kit")
         s.gcodeFile = "cyber_dragon_plate_2.gcode.3mf"
         s.wifiSignal = -48
         s.cameraAvailable = true
@@ -153,6 +170,9 @@ final class AppModel: ObservableObject {
         )
         app.devices = [mainDevice, mini]
         app.services = [mainDevice.serial: main, mini.serial: second]
+        app.loginRegion = .china
+        app.notificationsEnabled = true
+        app.launchAtLogin = false
         app.serviceObservers = [:]
         app.selectedID = mainDevice.serial
         app.manualIPs = [mainDevice.serial: "192.168.31.88"]
@@ -160,6 +180,11 @@ final class AppModel: ObservableObject {
         app.authStep = .ready
         app.isWorking = false
         return app
+    }
+
+    func setLanguage(_ language: AppLanguage) {
+        guard self.language != language else { return }
+        self.language = language
     }
 
     // MARK: - Derived
@@ -181,23 +206,22 @@ final class AppModel: ObservableObject {
         guard let service = selectedService else { return "BambuBar" }
         let status = service.status
         if authStep != .ready { return "BambuBar" }
-        if !service.isOnline { return "离线" }
+        if !service.isOnline { return Lang.t("离线", "Offline") }
         switch status.state {
         case .running, .prepare: return "\(status.progress)%"
-        case .paused: return "暂停"
-        case .finished: return "完成"
-        case .failed: return "异常"
-        case .idle: return "待机"
-        case .offline: return "离线"
-        case .unknown: return "等待"
+        case .paused: return Lang.t("暂停", "Pause")
+        case .finished: return Lang.t("完成", "Done")
+        case .failed: return Lang.t("异常", "Error")
+        case .idle: return Lang.t("待机", "Idle")
+        case .offline: return Lang.t("离线", "Offline")
+        case .unknown: return Lang.t("等待", "Wait")
         }
     }
 
+    /// The camera is opt-in: only a manually configured LAN IP enables the UI.
     func cameraHost(for service: PrinterService) -> String? {
         let manual = (manualIPs[service.device.serial] ?? "").trimmingCharacters(in: .whitespaces)
-        if !manual.isEmpty { return manual }
-        if let ip = service.status.ipAddress, !ip.isEmpty { return ip }
-        return nil
+        return manual.isEmpty ? nil : manual
     }
 
     // MARK: - Bootstrap / auth
@@ -213,7 +237,7 @@ final class AppModel: ObservableObject {
             SessionStore.clear()
             session = nil
             authStep = .login
-            authMessage = "登录已过期，请重新登录"
+            authMessage = Lang.t("登录已过期，请重新登录", "Your session expired. Please sign in again.")
             return
         }
         session = existing
@@ -223,7 +247,7 @@ final class AppModel: ObservableObject {
             SessionStore.clear()
             session = nil
             authStep = .login
-            authMessage = "登录已过期，请重新登录"
+            authMessage = Lang.t("登录已过期，请重新登录", "Your session expired. Please sign in again.")
             return
         }
         await loadDevices(startCloud: true)
@@ -233,7 +257,7 @@ final class AppModel: ObservableObject {
         guard !isWorking else { return }
         let account = account.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !account.isEmpty, !password.isEmpty else {
-            authMessage = "请输入账号和密码"
+            authMessage = Lang.t("请输入账号和密码", "Enter your account and password.")
             return
         }
         isWorking = true
@@ -250,7 +274,8 @@ final class AppModel: ObservableObject {
                 case .needsCode:
                     isWorking = false
                     authStep = .code
-                    authMessage = "验证码已发送到你的邮箱，请输入 6 位验证码"
+                    authMessage = Lang.t("验证码已发送到你的邮箱或手机，请输入 6 位验证码",
+                                        "A verification code was sent to your email or phone. Enter the 6-digit code.")
                 }
             } catch {
                 isWorking = false
@@ -263,7 +288,7 @@ final class AppModel: ObservableObject {
         guard !isWorking else { return }
         let code = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !code.isEmpty else {
-            authMessage = "请输入邮箱验证码"
+            authMessage = Lang.t("请输入邮箱或短信验证码", "Enter the email or SMS verification code.")
             return
         }
         isWorking = true
@@ -320,7 +345,7 @@ final class AppModel: ObservableObject {
             lastRefresh = Date()
             if fetched.isEmpty {
                 authStep = .empty
-                authMessage = "这个账号下还没有绑定打印机"
+                authMessage = Lang.t("这个账号下还没有绑定打印机", "No printers are bound to this account.")
                 cloud.stop()
                 cloudConnected = false
                 return
@@ -338,7 +363,7 @@ final class AppModel: ObservableObject {
             }
         } catch CloudError.unauthorized {
             logout()
-            authMessage = "登录已过期，请重新登录"
+            authMessage = Lang.t("登录已过期，请重新登录", "Your session expired. Please sign in again.")
         } catch {
             authStep = devices.isEmpty ? .empty : .ready
             authMessage = error.localizedDescription
@@ -387,7 +412,7 @@ final class AppModel: ObservableObject {
             self.cloud.stop()
             self.cloudConnected = false
             self.authStep = .login
-            self.authMessage = "云端认证失败，请重新登录"
+            self.authMessage = Lang.t("云端认证失败，请重新登录", "Cloud authentication failed. Please sign in again.")
             SessionStore.clear()
             self.session = nil
         }
@@ -400,13 +425,14 @@ final class AppModel: ObservableObject {
         guard notificationsEnabled else { return }
         if new == .finished {
             NotificationManager.shared.notify(
-                title: "打印完成 · \(service.device.name)",
+                title: Lang.t("打印完成 · \(service.device.name)", "Print finished · \(service.device.name)"),
                 body: status.displayName
             )
         } else if new == .failed {
             NotificationManager.shared.notify(
-                title: "打印异常 · \(service.device.name)",
-                body: "请检查打印机状态" + (status.printError != 0 ? "（错误码 \(status.printError)）" : "")
+                title: Lang.t("打印异常 · \(service.device.name)", "Print error · \(service.device.name)"),
+                body: Lang.t("请检查打印机状态", "Check the printer status")
+                    + (status.printError != 0 ? Lang.t("（错误码 \(status.printError)）", " (error \(status.printError))") : "")
             )
         }
     }
@@ -436,7 +462,8 @@ final class AppModel: ObservableObject {
             launchAtLogin = enabled
         } catch {
             launchAtLogin = SMAppService.mainApp.status == .enabled
-            authMessage = "无法设置开机启动：\(error.localizedDescription)"
+            authMessage = Lang.t("无法设置开机启动：\(error.localizedDescription)",
+                                "Could not update launch at login: \(error.localizedDescription)")
             Log.write("SMAppService error: \(error.localizedDescription)")
         }
     }

@@ -23,7 +23,7 @@ final class CameraClient: ObservableObject {
 
     func start(host: String, accessCode: String) {
         guard !host.isEmpty, !accessCode.isEmpty else {
-            errorText = "缺少打印机 IP 或访问码"
+            errorText = Lang.t("缺少打印机 IP 或访问码", "Missing printer IP or access code")
             return
         }
         if running, self.host == host, self.accessCode == accessCode { return }
@@ -87,7 +87,7 @@ final class CameraClient: ObservableObject {
                 self.receiveLoop()
                 self.startWatchdog()
             case .failed(let error):
-                self.fail("连接失败：\(error.localizedDescription)")
+                self.fail(Lang.t("连接失败：\(error.localizedDescription)", "Connection failed: \(error.localizedDescription)"))
             case .waiting(let error):
                 Log.write("Camera waiting: \(error.localizedDescription)")
             case .cancelled:
@@ -130,11 +130,11 @@ final class CameraClient: ObservableObject {
                 self.processFrames()
             }
             if let error {
-                self.fail("画面中断：\(error.localizedDescription)")
+                self.fail(Lang.t("画面中断：\(error.localizedDescription)", "Camera stream interrupted: \(error.localizedDescription)"))
                 return
             }
             if isComplete {
-                self.fail("画面连接被关闭")
+                self.fail(Lang.t("画面连接被关闭", "Camera connection closed"))
                 return
             }
             if self.running { self.receiveLoop() }
@@ -154,7 +154,7 @@ final class CameraClient: ObservableObject {
             guard size < 8_000_000 else {
                 Log.write("Camera frame too large (\(size)); resetting buffer")
                 buffer.removeAll()
-                fail("画面数据异常")
+                fail(Lang.t("画面数据异常", "Unexpected camera data"))
                 return
             }
             guard buffer.count >= 16 + size else { return }
@@ -184,7 +184,7 @@ final class CameraClient: ObservableObject {
         timer.setEventHandler { [weak self] in
             guard let self, self.running else { return }
             if Date().timeIntervalSince(self.lastFrameAt) > 25 {
-                self.fail("等待画面超时")
+                self.fail(Lang.t("等待画面超时", "Timed out waiting for a frame"))
             }
         }
         timer.resume()

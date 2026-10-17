@@ -38,13 +38,14 @@ struct DashboardView: View {
                 .padding(.bottom, 12)
             }
         }
-        .frame(width: 380, height: 624)
+        .frame(width: 376, height: 700)
         .background(PanelBackground())
-        .alert("取消当前打印？", isPresented: $showStopConfirm) {
-            Button("取消打印", role: .destructive) { service.stopPrint() }
-            Button("继续打印", role: .cancel) {}
+        .alert(Lang.t("取消当前打印？", "Cancel this print?"), isPresented: $showStopConfirm) {
+            Button(Lang.t("取消打印", "Cancel print"), role: .destructive) { service.stopPrint() }
+            Button(Lang.t("继续打印", "Keep printing"), role: .cancel) {}
         } message: {
-            Text("打印任务会被立即中止，已打印的部分无法恢复。")
+            Text(Lang.t("打印任务会被立即中止，已打印的部分无法恢复。",
+                        "The print will stop immediately. Printed material cannot be recovered."))
         }
         .sheet(isPresented: $showTemperatureSheet) {
             TemperatureSheet(service: service)
@@ -81,7 +82,7 @@ struct DashboardView: View {
                         .fill(service.isOnline ? Theme.green : Color.white.opacity(0.3))
                         .frame(width: 5, height: 5)
                 }
-                Text("\(service.device.model) · \(service.isOnline ? status.stageText : "离线")")
+                Text("\(service.device.model) · \(service.isOnline ? status.stageText : Lang.t("离线", "Offline"))")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
                     .lineLimit(1)
@@ -103,15 +104,15 @@ struct DashboardView: View {
                         }
                     }
                     Divider()
-                    Button("刷新设备列表") { app.refreshDevices() }
-                    Button("设置…") { openWindow(id: "settings") }
+                    Button(Lang.t("刷新设备列表", "Refresh printers")) { app.refreshDevices() }
+                    Button(Lang.t("设置…", "Settings…")) { openWindow(id: "settings") }
                     Divider()
-                    Button("退出 BambuBar") { app.quit() }
+                    Button(Lang.t("退出 BambuBar", "Quit BambuBar")) { app.quit() }
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.left.arrow.right")
                             .font(.system(size: 9, weight: .bold))
-                        Text("切换")
+                        Text(Lang.t("切换", "Switch"))
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                     }
                     .foregroundStyle(Theme.textSecondary)
@@ -155,7 +156,7 @@ struct DashboardView: View {
                         Image(systemName: service.isOnline ? status.state.symbol : "wifi.slash")
                             .font(.system(size: 22, weight: .medium))
                             .foregroundStyle(service.isOnline ? status.state.tint : Color.white.opacity(0.35))
-                        Text(service.isOnline ? status.state.shortLabel : "离线")
+                        Text(service.isOnline ? status.state.shortLabel : Lang.t("离线", "Offline"))
                             .font(.system(size: 9, weight: .medium, design: .rounded))
                             .foregroundStyle(Theme.textTertiary)
                     }
@@ -166,14 +167,14 @@ struct DashboardView: View {
                 HStack(spacing: 6) {
                     StateBadge(state: status.state, online: service.isOnline)
                     if status.state == .running, let eta = status.etaText {
-                        Text("预计 \(eta)")
+                        Text(Lang.t("预计 \(eta)", "ETA \(eta)"))
                             .font(.system(size: 10, weight: .medium, design: .rounded))
                             .foregroundStyle(Theme.textTertiary)
                     }
                     Spacer(minLength: 0)
                 }
 
-                Text(service.isOnline ? status.displayName : "打印机离线")
+                Text(service.isOnline ? status.displayName : Lang.t("打印机离线", "Printer offline"))
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
@@ -223,7 +224,7 @@ struct DashboardView: View {
         HStack(spacing: 7) {
             TempTile(
                 icon: "flame.fill",
-                title: "喷嘴",
+                title: Lang.t("喷嘴", "Nozzle"),
                 current: status.nozzleTemp,
                 target: status.nozzleTarget,
                 tint: Theme.orange,
@@ -232,7 +233,7 @@ struct DashboardView: View {
 
             TempTile(
                 icon: "rectangle.compress.vertical",
-                title: "热床",
+                title: Lang.t("热床", "Bed"),
                 current: status.bedTemp,
                 target: status.bedTarget,
                 tint: Theme.red.opacity(0.9),
@@ -241,13 +242,13 @@ struct DashboardView: View {
 
             TempTile(
                 icon: "wind",
-                title: "风扇",
+                title: Lang.t("风扇", "Fan"),
                 current: Double(status.coolingFan),
                 target: 0,
                 tint: Theme.cyan,
                 unit: "%",
                 enabled: service.isOnline,
-                targetText: "占空比 \(status.coolingFan)%"
+                targetText: Lang.t("占空比 \(status.coolingFan)%", "Duty \(status.coolingFan)%")
             ) { showTemperatureSheet = true }
         }
     }
@@ -256,7 +257,7 @@ struct DashboardView: View {
 
     private var speedCard: some View {
         VStack(spacing: 7) {
-            SectionHeader(title: "打印速度", icon: "speedometer", trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil)
+            SectionHeader(title: Lang.t("打印速度", "Print speed"), icon: "speedometer", trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil)
             SpeedSelector(level: status.speedLevel, enabled: service.isOnline && status.state.isBusy) { level in
                 service.setSpeed(level)
             }
@@ -278,7 +279,7 @@ struct DashboardView: View {
                 HStack(spacing: 7) {
                     Image(systemName: status.state.canResume ? "play.fill" : "pause.fill")
                         .font(.system(size: 11, weight: .bold))
-                    Text(status.state.canResume ? "继续打印" : "暂停打印")
+                    Text(status.state.canResume ? Lang.t("继续打印", "Resume print") : Lang.t("暂停打印", "Pause print"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                 }
                 .frame(maxWidth: .infinity)
@@ -313,8 +314,9 @@ struct DashboardView: View {
             .disabled(!status.state.isBusy)
 
             RoundIconButton(icon: "arrow.clockwise", size: 36) {
+                // Status-only refresh keeps the cloud HTTP API quiet while
+                // Bambu Handy may be operating the printer at the same time.
                 service.refresh()
-                app.refreshDevices()
             }
         }
     }
@@ -327,59 +329,17 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var cameraSection: some View {
-        if status.cameraAvailable {
+        // Camera is opt-in: the section stays hidden until the user enters
+        // a LAN IP in Settings. Auto-detected IPs are never used implicitly.
+        if let host = app.cameraHost(for: service), status.cameraAvailable {
             VStack(spacing: 8) {
-                SectionHeader(title: "实时画面", icon: "video.fill", trailing: "局域网")
-                if let host = app.cameraHost(for: service), !host.isEmpty {
-                    CameraPreview(host: host, accessCode: service.device.accessCode) {
-                        showCameraSheet = true
-                    }
-                } else {
-                    cameraHint(
-                        icon: "network",
-                        title: "需要填写打印机 IP",
-                        subtitle: "在设置中填写局域网 IP 后即可查看画面"
-                    )
+                SectionHeader(title: Lang.t("实时画面", "Live camera"), icon: "video.fill", trailing: Lang.t("局域网", "LAN"))
+                CameraPreview(host: host, accessCode: service.device.accessCode) {
+                    showCameraSheet = true
                 }
             }
             .card(padding: 10, radius: 14)
-        } else if service.device.model.lowercased().contains("mini") {
-            HStack(spacing: 8) {
-                Image(systemName: "video.slash")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.textTertiary)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("此机型没有内置摄像头")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary)
-                    Text("A1 mini 未配备腔体摄像头")
-                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-                Spacer()
-            }
-            .card(padding: 11, radius: 14)
         }
-    }
-
-    private func cameraHint(icon: String, title: String, subtitle: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.textTertiary)
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(Color.white.opacity(0.05)))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.textSecondary)
-                Text(subtitle)
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textTertiary)
-            }
-            Spacer()
-        }
-        .padding(.vertical, 2)
     }
 
     // MARK: AMS
@@ -389,7 +349,7 @@ struct DashboardView: View {
         if status.hasAMS {
             VStack(spacing: 7) {
                 SectionHeader(
-                    title: "AMS 耗材",
+                    title: Lang.t("AMS 耗材", "AMS filament"),
                     icon: "circle.grid.2x2.fill",
                     trailing: amsTrailing
                 )
@@ -412,7 +372,7 @@ struct DashboardView: View {
 
     private var amsTrailing: String? {
         var parts: [String] = []
-        if let h = status.amsHumidity { parts.append("湿度 \(h)%") }
+        if let h = status.amsHumidity { parts.append(Lang.t("湿度 \(h)%", "Humidity \(h)%")) }
         if let t = status.amsTemp { parts.append("\(Int(t.rounded()))°C") }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
@@ -431,13 +391,13 @@ struct DashboardView: View {
             Circle()
                 .fill(app.cloudConnected ? Theme.green : Theme.orange)
                 .frame(width: 5, height: 5)
-            Text(app.cloudConnected ? "云端已连接" : "云端重连中")
+            Text(app.cloudConnected ? Lang.t("云端已连接", "Cloud connected") : Lang.t("云端重连中", "Reconnecting"))
                 .font(.system(size: 9, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
             if let updated = status.lastUpdate {
                 Text("·")
                     .foregroundStyle(Theme.textTertiary)
-                Text("更新于 \(timeString(updated))")
+                Text(Lang.t("更新于 \(timeString(updated))", "Updated \(timeString(updated))"))
                     .font(.system(size: 9, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textTertiary)
             }
@@ -487,7 +447,7 @@ struct CameraPreview: View {
                             .font(.system(size: 17, weight: .medium))
                             .foregroundStyle(Theme.textTertiary)
                     }
-                    Text(camera.errorText ?? "正在连接摄像头…")
+                    Text(camera.errorText ?? Lang.t("正在连接摄像头…", "Connecting camera…"))
                         .font(.system(size: 9.5, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.textTertiary)
                         .multilineTextAlignment(.center)
@@ -550,11 +510,11 @@ struct CameraSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: "video.fill")
                     .foregroundStyle(Theme.green)
-                Text("\(name) · 实时画面")
+                Text(Lang.t("\(name) · 实时画面", "\(name) · Live camera"))
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
-                Button("关闭") { dismiss() }
+                Button(Lang.t("关闭", "Close")) { dismiss() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
@@ -569,7 +529,7 @@ struct CameraSheet: View {
                 } else {
                     VStack(spacing: 8) {
                         ProgressView()
-                        Text(camera.errorText ?? "正在连接摄像头…")
+                        Text(camera.errorText ?? Lang.t("正在连接摄像头…", "Connecting camera…"))
                             .font(.system(size: 11))
                             .foregroundStyle(Theme.textTertiary)
                     }

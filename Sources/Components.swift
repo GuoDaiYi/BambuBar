@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 
 // MARK: - Background
 
@@ -187,12 +188,14 @@ struct SpeedSelector: View {
     let enabled: Bool
     let onSelect: (Int) -> Void
 
-    private let items: [(Int, String, String)] = [
-        (1, "静音", "tortoise.fill"),
-        (2, "标准", "equal"),
-        (3, "运动", "hare.fill"),
-        (4, "狂暴", "bolt.fill")
-    ]
+    private var items: [(Int, String, String)] {
+        [
+            (1, Lang.t("静音", "Silent"), "tortoise.fill"),
+            (2, Lang.t("标准", "Standard"), "equal"),
+            (3, Lang.t("运动", "Sport"), "hare.fill"),
+            (4, Lang.t("狂暴", "Ludicrous"), "bolt.fill")
+        ]
+    }
 
     var body: some View {
         HStack(spacing: 3) {
@@ -266,7 +269,7 @@ struct TempTile: View {
                         .font(.system(size: 9, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.textTertiary)
                 }
-                Text(enabled ? (targetText ?? "目标 \(Int(target.rounded()))°") : "—")
+                Text(enabled ? (targetText ?? Lang.t("目标 \(Int(target.rounded()))°", "Target \(Int(target.rounded()))°")) : "—")
                     .font(.system(size: 9, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -321,7 +324,7 @@ struct SpoolView: View {
             }
             .frame(width: 42, height: 42)
 
-            Text(tray.isEmpty ? "空" : tray.displayType)
+            Text(tray.displayType)
                 .font(.system(size: 9.5, weight: .semibold, design: .rounded))
                 .foregroundStyle(tray.isEmpty ? Theme.textTertiary : Theme.textPrimary)
                 .lineLimit(1)
@@ -364,23 +367,26 @@ struct LogoMark: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Theme.green, Theme.mint],
+                        colors: [
+                            Color(red: 0.045, green: 0.105, blue: 0.082),
+                            Color(red: 0.020, green: 0.040, blue: 0.045)
+                        ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .shadow(color: Theme.green.opacity(0.35), radius: 10, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
+                        .stroke(Theme.green.opacity(0.18), lineWidth: 1)
+                )
+                .shadow(color: Theme.green.opacity(0.18), radius: 10, y: 4)
             Image(systemName: "printer.fill")
-                .font(.system(size: size * 0.42, weight: .semibold))
-                .foregroundStyle(Color(red: 0.03, green: 0.12, blue: 0.08))
-            Circle()
-                .fill(Theme.orange)
-                .frame(width: size * 0.16, height: size * 0.16)
-                .offset(x: size * 0.30, y: -size * 0.30)
-                .shadow(color: Theme.orange.opacity(0.5), radius: 3)
+                .font(.system(size: size * 0.44, weight: .semibold))
+                .foregroundStyle(Theme.green)
+                .shadow(color: Theme.green.opacity(0.35), radius: 6)
         }
         .frame(width: size, height: size)
     }
@@ -395,19 +401,21 @@ enum MenuBarIcon {
         image.lockFocus()
         defer { image.unlockFocus() }
 
-        let tint: NSColor = online ? NSColor(state.tint) : NSColor.white.withAlphaComponent(0.38)
+        // Template images are rendered by macOS in the menu bar's own color:
+        // white on a dark menu bar, black on a light one.
+        let ink = NSColor.black
         let center = NSPoint(x: 9, y: 9)
         let radius: CGFloat = 7.0
 
-        NSColor.white.withAlphaComponent(0.22).setStroke()
+        ink.withAlphaComponent(0.28).setStroke()
         let track = NSBezierPath()
         track.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
         track.lineWidth = 1.3
         track.stroke()
 
-        let clamped = max(0.0, min(progress, 1.0))
+        let clamped = online ? max(0.0, min(progress, 1.0)) : 0
         if clamped > 0.001 {
-            tint.setStroke()
+            ink.setStroke()
             let arc = NSBezierPath()
             arc.appendArc(withCenter: center, radius: radius, startAngle: -90, endAngle: -90 + 360 * clamped, clockwise: false)
             arc.lineWidth = 1.5
@@ -417,7 +425,7 @@ enum MenuBarIcon {
 
         if let symbol = NSImage(systemSymbolName: "printer.fill", accessibilityDescription: nil) {
             let config = NSImage.SymbolConfiguration(pointSize: 7.5, weight: .semibold)
-                .applying(NSImage.SymbolConfiguration(paletteColors: [tint]))
+                .applying(NSImage.SymbolConfiguration(paletteColors: [ink]))
             let configured = symbol.withSymbolConfiguration(config) ?? symbol
             let symbolSize = configured.size
             let rect = NSRect(
@@ -428,7 +436,7 @@ enum MenuBarIcon {
             )
             configured.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
         }
-        image.isTemplate = false
+        image.isTemplate = true
         return image
     }
 }
@@ -450,5 +458,33 @@ struct LabeledValue: View {
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
         }
+    }
+}
+
+
+// MARK: - Popover animation
+
+struct PopoverEntrance: ViewModifier {
+    @State private var visible = false
+
+    private func animateIn() {
+        visible = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                visible = true
+            }
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(visible ? 1 : 0)
+            .scaleEffect(visible ? 1 : 0.955, anchor: .top)
+            .offset(y: visible ? 0 : -8)
+            .onAppear { animateIn() }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+                animateIn()
+            }
+            .onDisappear { visible = false }
     }
 }

@@ -21,8 +21,9 @@ struct RootView: View {
                 }
             }
         }
-        .frame(width: 380)
+        .frame(width: 376)
         .environment(\.colorScheme, .dark)
+        .modifier(PopoverEntrance())
     }
 }
 
@@ -39,7 +40,7 @@ struct LoadingView: View {
                 .foregroundStyle(Theme.textPrimary)
             ProgressView()
                 .controlSize(.small)
-            Text(app.authMessage ?? "正在连接拓竹云端…")
+            Text(app.authMessage ?? Lang.t("正在连接拓竹云端…", "Connecting to Bambu Cloud…"))
                 .font(.system(size: 10.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
         }
@@ -68,11 +69,12 @@ struct LoginView: View {
                     Text("BambuBar")
                         .font(.system(size: 21, weight: .bold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary)
-                    Text("拓竹打印机 · 菜单栏控制台")
+                    Text(Lang.t("拓竹打印机 · 菜单栏控制台", "Bambu Lab printers · menu bar console"))
                         .font(.system(size: 10.5, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.textTertiary)
                 }
                 Spacer()
+                languageMenu
             }
             .padding(.bottom, 18)
 
@@ -100,13 +102,14 @@ struct LoginView: View {
             HStack(spacing: 5) {
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 9))
-                Text("登录凭证仅保存在本机钥匙串，不会上传")
+                Text(Lang.t("登录凭证仅保存在本机钥匙串，不会上传",
+                            "Credentials stay in the macOS Keychain and never leave this Mac."))
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
             }
             .foregroundStyle(Theme.textTertiary)
         }
         .padding(20)
-        .frame(width: 380, height: 486)
+        .frame(width: 376, height: 548)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
         .onAppear {
@@ -118,7 +121,7 @@ struct LoginView: View {
 
     private var loginForm: some View {
         VStack(alignment: .leading, spacing: 12) {
-            fieldLabel("账号区域")
+            fieldLabel(Lang.t("账号区域", "REGION"))
             HStack(spacing: 2) {
                 ForEach(CloudRegion.allCases) { region in
                     let selected = app.loginRegion == region
@@ -148,17 +151,17 @@ struct LoginView: View {
                     )
             )
 
-            fieldLabel("邮箱 / 手机号")
+            fieldLabel(Lang.t("邮箱 / 手机号", "EMAIL / PHONE"))
             inputField {
-                TextField("拓竹账号", text: $account)
+                TextField(Lang.t("邮箱或手机号", "Email or phone"), text: $account)
                     .textFieldStyle(.plain)
                     .focused($focusedField, equals: .account)
                     .onSubmit { focusedField = .password }
             }
 
-            fieldLabel("密码")
+            fieldLabel(Lang.t("密码", "PASSWORD"))
             inputField {
-                SecureField("账号密码", text: $password)
+                SecureField(Lang.t("账号密码", "Password"), text: $password)
                     .textFieldStyle(.plain)
                     .focused($focusedField, equals: .password)
                     .onSubmit { performLogin() }
@@ -172,7 +175,7 @@ struct LoginView: View {
                         Image(systemName: "arrow.right.circle.fill")
                             .font(.system(size: 12, weight: .semibold))
                     }
-                    Text(app.isWorking ? "登录中…" : "登录拓竹账号")
+                    Text(app.isWorking ? Lang.t("登录中…", "Signing in…") : Lang.t("登录拓竹账号", "Sign in to Bambu Lab"))
                         .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 }
                 .foregroundStyle(Color(red: 0.02, green: 0.10, blue: 0.06))
@@ -189,10 +192,22 @@ struct LoginView: View {
             .opacity(app.isWorking ? 0.8 : 1)
             .padding(.top, 2)
 
+            HStack(spacing: 5) {
+                Image(systemName: "envelope.badge")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(Lang.t("支持邮箱或手机短信验证码登录", "Email or SMS verification code supported"))
+                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+            }
+            .foregroundStyle(Theme.textTertiary)
+            .padding(.top, 2)
+
             VStack(alignment: .leading, spacing: 7) {
-                feature("bolt.fill", "云端实时状态，进度与温度持续刷新")
-                feature("slider.horizontal.3", "暂停 / 继续、四档调速、取消任务")
-                feature("camera.fill", "AMS 耗材与局域网摄像头画面")
+                feature("bolt.fill", Lang.t("云端实时状态，进度与温度持续刷新",
+                                            "Live cloud status with progress and temperatures"))
+                feature("slider.horizontal.3", Lang.t("暂停 / 继续、四档调速、取消任务",
+                                                     "Pause, resume, four speed modes and cancel"))
+                feature("camera.fill", Lang.t("AMS 耗材与局域网摄像头画面",
+                                             "AMS filament details and a LAN camera"))
             }
             .padding(.top, 10)
         }
@@ -217,16 +232,18 @@ struct LoginView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.green)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("需要邮箱验证码")
+                    Text(Lang.t("需要邮箱或短信验证码", "Verification required"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary)
-                    Text(account.isEmpty ? "验证码已发送到你的邮箱" : "已发送至 \(account)")
+                    Text(account.isEmpty
+                         ? Lang.t("验证码已发送到你的邮箱或手机", "A code was sent to your email or phone")
+                         : Lang.t("已发送至 \(account)", "Sent to \(account)"))
                         .font(.system(size: 9.5, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.textTertiary)
                 }
             }
 
-            fieldLabel("6 位验证码")
+            fieldLabel(Lang.t("6 位验证码", "6-DIGIT CODE"))
             inputField {
                 TextField("000000", text: $code)
                     .textFieldStyle(.plain)
@@ -248,7 +265,7 @@ struct LoginView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12, weight: .semibold))
                     }
-                    Text(app.isWorking ? "验证中…" : "验证并登录")
+                    Text(app.isWorking ? Lang.t("验证中…", "Verifying…") : Lang.t("验证并登录", "Verify and sign in"))
                         .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 }
                 .foregroundStyle(Color(red: 0.02, green: 0.10, blue: 0.06))
@@ -262,15 +279,52 @@ struct LoginView: View {
             .buttonStyle(.plain)
             .disabled(app.isWorking)
 
-            Button("返回，重新输入账号密码") {
+            Button(Lang.t("返回，重新输入账号密码", "Back to sign in")) {
                 code = ""
                 app.backToLogin()
             }
             .buttonStyle(.plain)
             .font(.system(size: 10, weight: .medium, design: .rounded))
             .foregroundStyle(Theme.textSecondary)
+
+            Text(Lang.t("验证码会发送到账号绑定的邮箱或手机；没收到可以返回重新登录。",
+                        "The code is sent to the email or phone linked to your account. Go back to sign in to request another."))
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .onAppear { focusedField = .code }
+    }
+
+    private var languageMenu: some View {
+        Menu {
+            ForEach(AppLanguage.allCases) { language in
+                Button {
+                    app.setLanguage(language)
+                } label: {
+                    if app.language == language {
+                        Label(language.title, systemImage: "checkmark")
+                    } else {
+                        Text(language.title)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "globe")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(app.language.shortTitle)
+                    .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+            }
+            .foregroundStyle(Theme.textSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(Color.white.opacity(0.06)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.07), lineWidth: 1))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
     }
 
     private func fieldLabel(_ text: String) -> some View {
@@ -318,10 +372,11 @@ struct NoDevicesView: View {
     var body: some View {
         VStack(spacing: 14) {
             LogoMark(size: 50)
-            Text("没有找到打印机")
+            Text(Lang.t("没有找到打印机", "No printers found"))
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary)
-            Text(app.authMessage ?? "请先在 Bambu Handy 或 BambuStudio 中绑定打印机，然后再刷新。")
+            Text(app.authMessage ?? Lang.t("请先在 Bambu Handy 或 BambuStudio 中绑定打印机，然后再刷新。",
+                                          "Bind a printer in Bambu Handy or Bambu Studio, then refresh."))
                 .font(.system(size: 10.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
                 .multilineTextAlignment(.center)
@@ -331,7 +386,7 @@ struct NoDevicesView: View {
                 Button {
                     app.refreshDevices()
                 } label: {
-                    Text("重新读取")
+                    Text(Lang.t("重新读取", "Retry"))
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color(red: 0.02, green: 0.10, blue: 0.06))
                         .padding(.horizontal, 16)
@@ -343,7 +398,7 @@ struct NoDevicesView: View {
                 Button {
                     openWindow(id: "settings")
                 } label: {
-                    Text("设置")
+                    Text(Lang.t("设置", "Settings"))
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 14)
@@ -354,7 +409,7 @@ struct NoDevicesView: View {
             }
             .padding(.top, 2)
 
-            Button("退出当前账号") { app.logout() }
+            Button(Lang.t("退出当前账号", "Sign out")) { app.logout() }
                 .buttonStyle(.plain)
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)

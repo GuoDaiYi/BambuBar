@@ -13,6 +13,7 @@ final class BambuCloud: ObservableObject {
     private var session: CloudSession?
     private var serials: [String] = []
     private var sequence = 0
+    private var lastPushall: [String: Date] = [:]
 
     func start(session: CloudSession, serials: [String]) {
         stop()
@@ -25,7 +26,7 @@ final class BambuCloud: ObservableObject {
             port: 8883,
             username: "u_\(session.uid)",
             password: session.accessToken,
-            clientID: "bambubar_\(String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12)))",
+            clientID: Self.stableClientID(),
             keepAlive: 60,
             allowInsecureTLS: false
         ))
@@ -67,13 +68,18 @@ final class BambuCloud: ObservableObject {
             return
         }
         guard let data = try? JSONSerialization.data(withJSONObject: body) else { return }
-        client.publish(topic: "device/\(serial)/request", payload: data)
+        client.publish(topic: "device/\(serial)/request", payload: data, qos: 1)
         if let text = String(data: data, encoding: .utf8) {
             Log.write("TX \(serial): \(text)")
         }
     }
 
-    func requestPushall(serial: String) {
+    func requestPushall(serial: String, force: Bool = false) {
+        if !force, let last = lastPushall[serial],
+           Date().timeIntervalSince(last) < 2.0 {
+            return
+        }
+        lastPushall[serial] = Date()
         sequence += 1
         send(serial: serial, body: [
             "pushing": [
@@ -85,12 +91,23 @@ final class BambuCloud: ObservableObject {
         ])
     }
 
+    private static func stableClientID() -> String {
+        let key = "mqttClientID"
+        if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty {
+            return saved
+        }
+        let suffix = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12))
+        let id = "bambubar_\(suffix)"
+        UserDefaults.standard.set(id, forKey: key)
+        return id
+    }
+
     // MARK: - Private
 
     private func handleConnected() {
         setConnected(true)
         for serial in serials {
-            requestPushall(serial: serial)
+            requestPushall(serial: serial, force: true)
         }
     }
 
