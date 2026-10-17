@@ -21,7 +21,6 @@ struct RootView: View {
                 }
             }
         }
-        .frame(width: 376)
         .environment(\.colorScheme, .dark)
         .modifier(PopoverEntrance())
     }
@@ -44,8 +43,7 @@ struct LoadingView: View {
                 .font(.system(size: 10.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .frame(height: 420)
+        .frame(width: 620, height: 360)
         .background(PanelBackground())
     }
 }
@@ -62,21 +60,90 @@ struct LoginView: View {
     private enum Field { case account, password, code }
 
     var body: some View {
+        HStack(spacing: 0) {
+            brandingPanel
+                .frame(width: 258)
+            Divider().overlay(Color.white.opacity(0.07))
+            formPanel
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(width: 640, height: 430)
+        .background(PanelBackground())
+        .environment(\.colorScheme, .dark)
+        .onAppear {
+            if account.isEmpty { focusedField = .account } else { focusedField = .password }
+        }
+    }
+
+    // MARK: Left branding
+
+    private var brandingPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 12) {
-                LogoMark(size: 48)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("BambuBar")
-                        .font(.system(size: 21, weight: .bold, design: .rounded))
-                        .foregroundStyle(Theme.textPrimary)
-                    Text(Lang.t("拓竹打印机 · 菜单栏控制台", "Bambu Lab printers · menu bar console"))
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textTertiary)
-                }
+            LogoMark(size: 54)
+            Text("BambuBar")
+                .font(.system(size: 25, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary)
+                .padding(.top, 14)
+            Text(Lang.t("拓竹打印机 · 菜单栏控制台", "Bambu Lab printers · menu bar console"))
+                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.top, 3)
+
+            VStack(alignment: .leading, spacing: 10) {
+                feature("bolt.fill", Lang.t("云端实时状态，进度与温度持续刷新",
+                                            "Live cloud status with progress and temperatures"))
+                feature("slider.horizontal.3", Lang.t("暂停 / 继续、四档调速、取消任务",
+                                                     "Pause, resume, four speed modes and cancel"))
+                feature("camera.fill", Lang.t("AMS 耗材与局域网摄像头画面",
+                                             "AMS filament details and a LAN camera"))
+                feature("globe", Lang.t("中文 / English 随时切换",
+                                        "Switch between English and Chinese"))
+            }
+            .padding(.top, 26)
+
+            Spacer(minLength: 16)
+
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 9))
+                Text(Lang.t("登录凭证仅保存在本机钥匙串，不会上传",
+                            "Credentials stay in the macOS Keychain and never leave this Mac."))
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(Theme.textTertiary)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
+    }
+
+    private func feature(_ icon: String, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(Theme.green)
+                .frame(width: 14)
+            Text(text)
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: Right form
+
+    private var formPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Text(app.authStep == .code
+                     ? Lang.t("输入验证码", "Enter verification code")
+                     : Lang.t("登录拓竹账号", "Sign in"))
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
                 languageMenu
             }
-            .padding(.bottom, 18)
+            .padding(.bottom, 16)
 
             if app.authStep == .code {
                 codeForm
@@ -94,33 +161,17 @@ struct LoginView: View {
                         .foregroundStyle(Theme.orange)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.top, 12)
+                .padding(.top, 10)
             }
 
-            Spacer(minLength: 14)
-
-            HStack(spacing: 5) {
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 9))
-                Text(Lang.t("登录凭证仅保存在本机钥匙串，不会上传",
-                            "Credentials stay in the macOS Keychain and never leave this Mac."))
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-            }
-            .foregroundStyle(Theme.textTertiary)
+            Spacer(minLength: 0)
         }
-        .padding(20)
-        .frame(width: 376, height: 548)
-        .background(PanelBackground())
-        .environment(\.colorScheme, .dark)
-        .onAppear {
-            if account.isEmpty { focusedField = .account } else { focusedField = .password }
-        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
     }
 
-    // MARK: Forms
-
     private var loginForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 11) {
             fieldLabel(Lang.t("账号区域", "REGION"))
             HStack(spacing: 2) {
                 ForEach(CloudRegion.allCases) { region in
@@ -132,7 +183,7 @@ struct LoginView: View {
                             .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(selected ? Theme.green : Theme.textTertiary)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 28)
+                            .frame(height: 27)
                             .background(
                                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                                     .fill(selected ? Theme.green.opacity(0.15) : Color.clear)
@@ -180,7 +231,7 @@ struct LoginView: View {
                 }
                 .foregroundStyle(Color(red: 0.02, green: 0.10, blue: 0.06))
                 .frame(maxWidth: .infinity)
-                .frame(height: 38)
+                .frame(height: 37)
                 .background(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .fill(Theme.green)
@@ -190,7 +241,7 @@ struct LoginView: View {
             .buttonStyle(.plain)
             .disabled(app.isWorking)
             .opacity(app.isWorking ? 0.8 : 1)
-            .padding(.top, 2)
+            .padding(.top, 3)
 
             HStack(spacing: 5) {
                 Image(systemName: "envelope.badge")
@@ -199,34 +250,11 @@ struct LoginView: View {
                     .font(.system(size: 9.5, weight: .medium, design: .rounded))
             }
             .foregroundStyle(Theme.textTertiary)
-            .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 7) {
-                feature("bolt.fill", Lang.t("云端实时状态，进度与温度持续刷新",
-                                            "Live cloud status with progress and temperatures"))
-                feature("slider.horizontal.3", Lang.t("暂停 / 继续、四档调速、取消任务",
-                                                     "Pause, resume, four speed modes and cancel"))
-                feature("camera.fill", Lang.t("AMS 耗材与局域网摄像头画面",
-                                             "AMS filament details and a LAN camera"))
-            }
-            .padding(.top, 10)
-        }
-    }
-
-    private func feature(_ icon: String, _ text: String) -> some View {
-        HStack(spacing: 7) {
-            Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(Theme.green)
-                .frame(width: 14)
-            Text(text)
-                .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textTertiary)
         }
     }
 
     private var codeForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 11) {
             HStack(spacing: 8) {
                 Image(systemName: "envelope.badge.fill")
                     .font(.system(size: 13, weight: .semibold))
@@ -252,7 +280,7 @@ struct LoginView: View {
                     .focused($focusedField, equals: .code)
                     .onSubmit { performCodeLogin() }
                     .onChange(of: code) { value in
-                        let filtered = value.filter(\.isNumber)
+                        let filtered = value.filter { $0.isNumber }
                         if filtered != value { code = String(filtered.prefix(8)) }
                     }
             }
@@ -270,7 +298,7 @@ struct LoginView: View {
                 }
                 .foregroundStyle(Color(red: 0.02, green: 0.10, blue: 0.06))
                 .frame(maxWidth: .infinity)
-                .frame(height: 38)
+                .frame(height: 37)
                 .background(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .fill(Theme.green)
@@ -318,7 +346,7 @@ struct LoginView: View {
             }
             .foregroundStyle(Theme.textSecondary)
             .padding(.horizontal, 8)
-            .padding(.vertical, 5)
+            .padding(.vertical, 4)
             .background(Capsule().fill(Color.white.opacity(0.06)))
             .overlay(Capsule().stroke(Color.white.opacity(0.07), lineWidth: 1))
         }
@@ -341,7 +369,7 @@ struct LoginView: View {
             .font(.system(size: 12, weight: .medium, design: .rounded))
             .foregroundStyle(Theme.textPrimary)
             .padding(.horizontal, 11)
-            .frame(height: 36)
+            .frame(height: 35)
             .background(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Color.black.opacity(0.22))
@@ -414,8 +442,7 @@ struct NoDevicesView: View {
                 .font(.system(size: 9.5, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.textTertiary)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 360)
+        .frame(width: 620, height: 360)
         .background(PanelBackground())
     }
 }

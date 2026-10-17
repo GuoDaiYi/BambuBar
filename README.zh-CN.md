@@ -9,18 +9,10 @@
   实时进度、暂停/继续、四档调速、AMS 耗材和局域网摄像头。
 </p>
 
-<p align="center">
-  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="版本 1.0.0" src="https://img.shields.io/badge/version-1.0.0-brightgreen"></a>
-  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple">
-  <img alt="Universal" src="https://img.shields.io/badge/binary-universal-blue">
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
-</p>
-
-[English](README.md) · [简体中文](README.zh-CN.md)
 
 BambuBar 常驻 macOS 菜单栏，直接连接拓竹云账号。菜单栏里就能看到当前打印进度，点击面板即可切换打印机、暂停/继续、调速、取消任务、查看温度、AMS 耗材和局域网摄像头画面。
 
-界面支持 **简体中文 / English**，可在登录页右上角或设置中随时切换，选择会被记住。
+界面支持 **简体中文 / 英文**，可在登录页右上角或设置中随时切换，选择会被记住。
 
 ---
 
@@ -46,12 +38,6 @@ BambuBar 常驻 macOS 菜单栏，直接连接拓竹云账号。菜单栏里就�
 | :---: | :---: | :---: |
 | <img src="docs/zh/dashboard.png" width="250"> | <img src="docs/zh/login.png" width="250"> | <img src="docs/zh/settings.png" width="290"> |
 
-### English
-
-| 主面板 | 登录 | 设置 |
-| :---: | :---: | :---: |
-| <img src="docs/en/dashboard.png" width="250"> | <img src="docs/en/login.png" width="250"> | <img src="docs/en/settings.png" width="290"> |
-
 ## 系统要求
 
 - macOS 13 Ventura 或更高版本（Apple Silicon / Intel）
@@ -62,7 +48,7 @@ BambuBar 常驻 macOS 菜单栏，直接连接拓竹云账号。菜单栏里就�
 
 ### 下载安装
 
-从 [Releases](https://github.com/GuoDaiYi/BambuBar/releases/latest) 下载 **BambuBar-1.0.0-macOS.dmg**，打开后把 **BambuBar** 拖进 **Applications**。安装包内含 Apple Silicon + Intel 通用二进制。
+从 [Releases](https://github.com/GuoDaiYi/BambuBar/releases/latest) 下载 **BambuBar-1.1.0-macOS.dmg**，打开后把 **BambuBar** 拖进 **Applications**。安装包内含 Apple Silicon + Intel 通用二进制。
 
 App 使用本地 ad-hoc 签名，未经过公证。如果 macOS 阻止打开，请右键 App 选择「打开」，或执行：
 

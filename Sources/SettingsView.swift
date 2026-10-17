@@ -7,47 +7,57 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 9) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.green)
-                Text(Lang.t("设置", "Settings"))
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Theme.textSecondary)
-                        .frame(width: 24, height: 24)
-                        .background(Circle().fill(Color.white.opacity(0.06)))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 30)
-            .padding(.bottom, 12)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 14) {
+            header
+            HStack(alignment: .top, spacing: 14) {
+                VStack(spacing: 12) {
                     accountCard
                     languageSection
-                    printerSection
                     generalSection
-                    aboutSection
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 18)
+                .frame(width: 294)
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        printerSection
+                        aboutSection
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
+            .padding(.horizontal, 18)
+            .padding(.bottom, 16)
         }
-        .frame(width: 440, height: 700)
+        .frame(width: 720, height: 480)
         .background(PanelBackground())
         .environment(\.colorScheme, .dark)
         .onAppear {
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    private var header: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.green)
+            Text(Lang.t("设置", "Settings"))
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary)
+            Spacer()
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(width: 24, height: 24)
+                    .background(Circle().fill(Color.white.opacity(0.06)))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 30)
+        .padding(.bottom, 14)
     }
 
     // MARK: Account
@@ -118,7 +128,7 @@ struct SettingsView: View {
     }
 
     private var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0.0"
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.1.0"
     }
 
     // MARK: Printers

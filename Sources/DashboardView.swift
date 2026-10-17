@@ -13,32 +13,30 @@ struct DashboardView: View {
     @State private var showCameraSheet = false
 
     private var status: PrinterStatus { service.status }
+    private var cameraEnabled: Bool {
+        app.cameraHost(for: service) != nil && status.cameraAvailable
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             header
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, 10)
 
             Divider().overlay(Color.white.opacity(0.06))
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 11) {
-                    heroCard
-                    temperatureGrid
-                    speedCard
-                    actionRow
-                    amsSection
-                    cameraSection
-                    footer
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 12)
+            HStack(alignment: .top, spacing: 12) {
+                leftColumn
+                    .frame(width: 440)
+                rightColumn
+                    .frame(width: 300)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 12)
         }
-        .frame(width: 376, height: 700)
+        .frame(width: 784, height: 500)
         .background(PanelBackground())
         .alert(Lang.t("取消当前打印？", "Cancel this print?"), isPresented: $showStopConfirm) {
             Button(Lang.t("取消打印", "Cancel print"), role: .destructive) { service.stopPrint() }
@@ -62,20 +60,20 @@ struct DashboardView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Theme.green.opacity(0.13))
                 Image(systemName: "printer.fill")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.green)
             }
-            .frame(width: 30, height: 30)
+            .frame(width: 32, height: 32)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 5) {
                     Text(service.device.name)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
                     Circle()
@@ -88,7 +86,21 @@ struct DashboardView: View {
                     .lineLimit(1)
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 8)
+
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(app.cloudConnected ? Theme.green : Theme.orange)
+                    .frame(width: 5, height: 5)
+                Text(app.cloudConnected ? Lang.t("云端已连接", "Cloud") : Lang.t("重连中", "Reconnecting"))
+                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textTertiary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(Color.white.opacity(0.05)))
+
+            languageMenu
 
             if app.orderedServices.count > 1 {
                 Menu {
@@ -132,21 +144,60 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: Hero
+    private var languageMenu: some View {
+        Menu {
+            ForEach(AppLanguage.allCases) { language in
+                Button {
+                    app.setLanguage(language)
+                } label: {
+                    if app.language == language {
+                        Label(language.title, systemImage: "checkmark")
+                    } else {
+                        Text(language.title)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "globe")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(app.language.shortTitle)
+                    .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+            }
+            .foregroundStyle(Theme.textSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(Color.white.opacity(0.05)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.07), lineWidth: 1))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    // MARK: Left column
+
+    private var leftColumn: some View {
+        VStack(spacing: 10) {
+            heroCard
+            temperatureGrid
+            controlCard
+        }
+    }
 
     private var heroCard: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             ZStack {
                 ProgressRing(
                     progress: status.state == .idle ? 0 : Double(status.progress) / 100,
                     tint: service.isOnline ? status.state.tint : Color.white.opacity(0.35),
                     lineWidth: 7,
-                    size: 88
+                    size: 106
                 )
                 VStack(spacing: 1) {
                     if service.isOnline, status.state.isBusy || status.state == .finished {
                         Text("\(status.progress)")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundStyle(Theme.textPrimary)
                             .monospacedDigit()
                         Text("%")
@@ -154,7 +205,7 @@ struct DashboardView: View {
                             .foregroundStyle(Theme.textTertiary)
                     } else {
                         Image(systemName: service.isOnline ? status.state.symbol : "wifi.slash")
-                            .font(.system(size: 22, weight: .medium))
+                            .font(.system(size: 25, weight: .medium))
                             .foregroundStyle(service.isOnline ? status.state.tint : Color.white.opacity(0.35))
                         Text(service.isOnline ? status.state.shortLabel : Lang.t("离线", "Offline"))
                             .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -163,7 +214,7 @@ struct DashboardView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     StateBadge(state: status.state, online: service.isOnline)
                     if status.state == .running, let eta = status.etaText {
@@ -175,7 +226,7 @@ struct DashboardView: View {
                 }
 
                 Text(service.isOnline ? status.displayName : Lang.t("打印机离线", "Printer offline"))
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -183,19 +234,11 @@ struct DashboardView: View {
                 HStack(spacing: 5) {
                     InfoChip(icon: "square.stack.3d.up.fill", text: status.layerText)
                     InfoChip(icon: "clock.fill", text: status.remainingText)
-                }
-
-                if status.speedLevel > 0 {
-                    HStack(spacing: 5) {
-                        Image(systemName: "speedometer")
-                            .font(.system(size: 9, weight: .semibold))
-                        Text("\(status.speedLabel) · \(status.speedMagnitude)%")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                    }
-                    .foregroundStyle(Theme.textTertiary)
+                    InfoChip(icon: "speedometer", text: "\(status.speedLabel) · \(status.speedMagnitude)%")
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(
             ZStack {
@@ -218,10 +261,8 @@ struct DashboardView: View {
         )
     }
 
-    // MARK: Temperatures
-
     private var temperatureGrid: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: 8) {
             TempTile(
                 icon: "flame.fill",
                 title: Lang.t("喷嘴", "Nozzle"),
@@ -253,19 +294,22 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: Speed
-
-    private var speedCard: some View {
-        VStack(spacing: 7) {
-            SectionHeader(title: Lang.t("打印速度", "Print speed"), icon: "speedometer", trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil)
+    private var controlCard: some View {
+        VStack(spacing: 9) {
+            HStack {
+                SectionHeader(
+                    title: Lang.t("打印速度", "Print speed"),
+                    icon: "speedometer",
+                    trailing: status.speedMagnitude > 0 ? "\(status.speedMagnitude)%" : nil
+                )
+            }
             SpeedSelector(level: status.speedLevel, enabled: service.isOnline && status.state.isBusy) { level in
                 service.setSpeed(level)
             }
+            actionRow
         }
         .card(padding: 10, radius: 14)
     }
-
-    // MARK: Actions
 
     private var actionRow: some View {
         HStack(spacing: 8) {
@@ -283,10 +327,10 @@ struct DashboardView: View {
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 36)
+                .frame(height: 34)
                 .foregroundStyle(canPauseResume ? Color(red: 0.02, green: 0.10, blue: 0.06) : Theme.textTertiary)
                 .background(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(canPauseResume ? Theme.green : Color.white.opacity(0.06))
                         .shadow(color: canPauseResume ? Theme.green.opacity(0.25) : .clear, radius: 6)
                 )
@@ -299,13 +343,13 @@ struct DashboardView: View {
             } label: {
                 Image(systemName: "stop.fill")
                     .font(.system(size: 12, weight: .bold))
-                    .frame(width: 40, height: 36)
+                    .frame(width: 40, height: 34)
                     .foregroundStyle(status.state.isBusy ? Theme.red : Theme.textTertiary)
                     .background(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(Theme.red.opacity(status.state.isBusy ? 0.13 : 0.04))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .stroke(Theme.red.opacity(status.state.isBusy ? 0.22 : 0.06), lineWidth: 1)
                             )
                     )
@@ -313,9 +357,7 @@ struct DashboardView: View {
             .buttonStyle(.plain)
             .disabled(!status.state.isBusy)
 
-            RoundIconButton(icon: "arrow.clockwise", size: 36) {
-                // Status-only refresh keeps the cloud HTTP API quiet while
-                // Bambu Handy may be operating the printer at the same time.
+            RoundIconButton(icon: "arrow.clockwise", size: 34) {
                 service.refresh()
             }
         }
@@ -325,35 +367,42 @@ struct DashboardView: View {
         service.isOnline && (status.state.canPause || status.state.canResume)
     }
 
-    // MARK: Camera
+    // MARK: Right column
 
-    @ViewBuilder
-    private var cameraSection: some View {
-        // Camera is opt-in: the section stays hidden until the user enters
-        // a LAN IP in Settings. Auto-detected IPs are never used implicitly.
-        if let host = app.cameraHost(for: service), status.cameraAvailable {
-            VStack(spacing: 8) {
-                SectionHeader(title: Lang.t("实时画面", "Live camera"), icon: "video.fill", trailing: Lang.t("局域网", "LAN"))
-                CameraPreview(host: host, accessCode: service.device.accessCode) {
-                    showCameraSheet = true
+    private var rightColumn: some View {
+        VStack(spacing: 10) {
+            if cameraEnabled, let host = app.cameraHost(for: service) {
+                VStack(spacing: 7) {
+                    SectionHeader(
+                        title: Lang.t("实时画面", "Live camera"),
+                        icon: "video.fill",
+                        trailing: Lang.t("局域网", "LAN")
+                    )
+                    CameraPreview(host: host, accessCode: service.device.accessCode, height: 150) {
+                        showCameraSheet = true
+                    }
                 }
+                .card(padding: 9, radius: 14)
             }
-            .card(padding: 10, radius: 14)
+
+            amsSection
+
+            statusCard
+
+            Spacer(minLength: 0)
         }
     }
-
-    // MARK: AMS
 
     @ViewBuilder
     private var amsSection: some View {
         if status.hasAMS {
-            VStack(spacing: 7) {
+            VStack(spacing: 6) {
                 SectionHeader(
                     title: Lang.t("AMS 耗材", "AMS filament"),
                     icon: "circle.grid.2x2.fill",
                     trailing: amsTrailing
                 )
-                HStack(spacing: 2) {
+                HStack(spacing: 0) {
                     if status.amsTrays.isEmpty, let external = status.externalTray {
                         SpoolView(tray: external)
                     } else {
@@ -366,7 +415,50 @@ struct DashboardView: View {
                     }
                 }
             }
-            .card(padding: 10, radius: 14)
+            .card(padding: 9, radius: 14)
+        }
+    }
+
+    private var statusCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionHeader(
+                title: Lang.t("打印机状态", "Printer status"),
+                icon: "dot.radiowaves.left.and.right",
+                trailing: status.lastUpdate.map { timeString($0) }
+            )
+            HStack(spacing: 8) {
+                statusLine(icon: "wifi", text: wifiText)
+                Divider().frame(height: 10).overlay(Color.white.opacity(0.08))
+                statusLine(icon: "cloud.fill", text: app.cloudConnected ? Lang.t("云端", "Cloud") : Lang.t("重连中", "Reconnecting"))
+                Spacer()
+            }
+            HStack(spacing: 8) {
+                statusLine(icon: "gauge", text: status.stageText)
+                Spacer()
+                if status.printError != 0 {
+                    statusLine(icon: "exclamationmark.triangle.fill",
+                               text: "\(Lang.t("错误", "Error")) \(status.printError)",
+                               tint: Theme.red)
+                }
+            }
+        }
+        .card(padding: 9, radius: 14)
+    }
+
+    private var wifiText: String {
+        guard let signal = status.wifiSignal else { return "—" }
+        return "\(signal) dBm"
+    }
+
+    private func statusLine(icon: String, text: String, tint: Color = Theme.textTertiary) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(tint)
+            Text(text)
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(tint)
+                .lineLimit(1)
         }
     }
 
@@ -384,34 +476,6 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: Footer
-
-    private var footer: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(app.cloudConnected ? Theme.green : Theme.orange)
-                .frame(width: 5, height: 5)
-            Text(app.cloudConnected ? Lang.t("云端已连接", "Cloud connected") : Lang.t("云端重连中", "Reconnecting"))
-                .font(.system(size: 9, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textTertiary)
-            if let updated = status.lastUpdate {
-                Text("·")
-                    .foregroundStyle(Theme.textTertiary)
-                Text(Lang.t("更新于 \(timeString(updated))", "Updated \(timeString(updated))"))
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textTertiary)
-            }
-            Spacer()
-            if let err = app.authMessage, !err.isEmpty {
-                Text(err)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.orange)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.top, 1)
-    }
-
     private func timeString(_ date: Date) -> String {
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss"
@@ -424,6 +488,7 @@ struct DashboardView: View {
 struct CameraPreview: View {
     let host: String
     let accessCode: String
+    var height: CGFloat = 160
     var onExpand: () -> Void = {}
 
     @StateObject private var camera = CameraClient()
@@ -483,7 +548,7 @@ struct CameraPreview: View {
             }
             .padding(8)
         }
-        .frame(height: 160)
+        .frame(height: height)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)

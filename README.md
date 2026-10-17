@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml"><img alt="Build" src="https://github.com/GuoDaiYi/BambuBar/actions/workflows/build.yml/badge.svg"></a>
-  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-brightgreen"></a>
+  <a href="https://github.com/GuoDaiYi/BambuBar/releases/latest"><img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-brightgreen"></a>
   <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple">
   <img alt="Universal binary" src="https://img.shields.io/badge/binary-universal-blue">
   <img alt="Swift 5.8" src="https://img.shields.io/badge/Swift-5.8-orange?logo=swift">
@@ -20,9 +20,7 @@
 
 BambuBar lives in the macOS menu bar and connects directly to your Bambu Lab cloud account. It shows the current print in a compact progress ring, lets you switch between multiple printers, and exposes the controls you actually need during a print — without opening a slicer or a browser.
 
-Available in **English** and **简体中文** — switch languages from the globe menu on the sign-in screen or in Settings. The choice is remembered across launches.
-
-[English](README.md) · [简体中文](README.zh-CN.md)
+Available in **English** and **Simplified Chinese** — switch languages from the globe menu on the sign-in screen or in Settings. The choice is remembered across launches.
 
 ---
 
@@ -49,12 +47,6 @@ Available in **English** and **简体中文** — switch languages from the glob
 | :---: | :---: | :---: |
 | <img src="docs/en/dashboard.png" width="250"> | <img src="docs/en/login.png" width="250"> | <img src="docs/en/settings.png" width="290"> |
 
-### 简体中文
-
-| 主面板 | 登录 | 设置 |
-| :---: | :---: | :---: |
-| <img src="docs/zh/dashboard.png" width="250"> | <img src="docs/zh/login.png" width="250"> | <img src="docs/zh/settings.png" width="290"> |
-
 ## Requirements
 
 - macOS 13 Ventura or later (Apple Silicon or Intel)
@@ -66,7 +58,7 @@ Available in **English** and **简体中文** — switch languages from the glob
 
 ### Download the app
 
-Download **BambuBar-1.0.0-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
+Download **BambuBar-1.1.0-macOS.dmg** from the [latest release](https://github.com/GuoDaiYi/BambuBar/releases/latest), open it, and drag **BambuBar** into **Applications**. The DMG contains a universal binary for Apple Silicon and Intel Macs.
 
 The app is ad-hoc signed but not notarized. If macOS refuses to launch it, right-click the app and choose **Open**, or run:
 

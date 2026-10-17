@@ -467,23 +467,18 @@ struct LabeledValue: View {
 struct PopoverEntrance: ViewModifier {
     @State private var visible = false
 
-    private func animateIn() {
-        visible = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                visible = true
-            }
-        }
-    }
-
     func body(content: Content) -> some View {
         content
             .opacity(visible ? 1 : 0)
-            .scaleEffect(visible ? 1 : 0.955, anchor: .top)
-            .offset(y: visible ? 0 : -8)
-            .onAppear { animateIn() }
-            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
-                animateIn()
+            .scaleEffect(visible ? 1 : 0.97, anchor: .top)
+            .offset(y: visible ? 0 : -6)
+            .onAppear {
+                visible = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                        visible = true
+                    }
+                }
             }
             .onDisappear { visible = false }
     }

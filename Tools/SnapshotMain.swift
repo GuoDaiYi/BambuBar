@@ -12,30 +12,31 @@ struct SnapshotMain {
         NSApp.setActivationPolicy(.accessory)
         NSApp.appearance = NSAppearance(named: .darkAqua)
 
+        let languageID = CommandLine.arguments.dropFirst().first ?? "zh"
+        let language: AppLanguage = languageID == "en" ? .en : .zhHans
+        Lang.current = language
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             Task { @MainActor in
-                for language in AppLanguage.allCases {
-                    let folder = language == .zhHans ? "zh" : "en"
-                    let dir = URL(fileURLWithPath: "/tmp/bambubar-shots/\(folder)", isDirectory: true)
-                    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                let dir = URL(fileURLWithPath: "/tmp/bambubar-shots/\(languageID)", isDirectory: true)
+                try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
-                    let model = AppModel.demo(language: language)
-                    if let service = model.selectedService {
-                        let dashboard = DashboardView(service: service).environmentObject(model)
-                        enqueue(dashboard, size: CGSize(width: 376, height: 700),
-                                path: dir.appendingPathComponent("dashboard.png").path)
-                    }
-
-                    let loginModel = AppModel.demo(language: language)
-                    loginModel.authStep = .login
-                    enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 376, height: 560),
-                            path: dir.appendingPathComponent("login.png").path)
-
-                    enqueue(SettingsView().environmentObject(model), size: CGSize(width: 440, height: 700),
-                            path: dir.appendingPathComponent("settings.png").path)
+                let model = AppModel.demo(language: language)
+                if let service = model.selectedService {
+                    let dashboard = DashboardView(service: service).environmentObject(model)
+                    enqueue(dashboard, size: CGSize(width: 784, height: 500),
+                            path: dir.appendingPathComponent("dashboard.png").path)
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+                let loginModel = AppModel.demo(language: language)
+                loginModel.authStep = .login
+                enqueue(LoginView().environmentObject(loginModel), size: CGSize(width: 640, height: 430),
+                        path: dir.appendingPathComponent("login.png").path)
+
+                enqueue(SettingsView().environmentObject(model), size: CGSize(width: 720, height: 480),
+                        path: dir.appendingPathComponent("settings.png").path)
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
                     captureAll()
                     exit(0)
                 }

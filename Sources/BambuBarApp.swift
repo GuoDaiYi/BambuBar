@@ -67,7 +67,7 @@ struct BambuBarApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
-        .defaultSize(width: 440, height: 700)
+        .defaultSize(width: 720, height: 480)
     }
 }
 

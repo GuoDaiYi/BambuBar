@@ -21,4 +21,5 @@ swiftc -O -parse-as-library \
   "${FILES[@]}" "$ROOT/Tools/SnapshotMain.swift" \
   -o "$ROOT/build/snapshot"
 
-"$ROOT/build/snapshot"
+"$ROOT/build/snapshot" zh
+"$ROOT/build/snapshot" en
